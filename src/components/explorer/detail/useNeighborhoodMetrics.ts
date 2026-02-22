@@ -91,7 +91,7 @@ export function useNeighborhoodMetrics(id: string | null): NeighborhoodMetrics |
     )
 
     const name =
-      hood?.name || hoodFeature.properties.NHD_NAME || `Neighborhood ${hoodKey}`
+      hoodFeature.properties.NHD_NAME || hood?.name || `Neighborhood ${hoodKey}`
 
     return {
       name,

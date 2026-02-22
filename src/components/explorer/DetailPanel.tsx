@@ -60,7 +60,6 @@ export function DetailPanel() {
   const config = displaySelected
     ? ENTITY_CONFIG[displaySelected.type]
     : undefined
-
   if (state.compareMode) {
     return (
       <div className="flex h-full flex-col">
