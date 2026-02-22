@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { Slider } from '@/components/ui/slider'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useData, useExplorer } from './ExplorerProvider'
 
 function clamp(v: number, min: number, max: number): number {
@@ -66,12 +67,24 @@ export function TimeRangeSlider() {
 
   return (
     <div
-      className="absolute bottom-3 left-3 z-10 w-[min(400px,calc(100%-6rem))] rounded-xl border border-border/60 bg-background/90 px-4 py-2.5 shadow-lg backdrop-blur-md"
+      className="absolute bottom-3 left-3 z-10 w-[min(400px,calc(100%-6rem))] rounded-xl border border-border/60 bg-background/90 px-3 py-1.5 shadow-lg backdrop-blur-md"
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
           Year
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="cursor-help text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 7v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="8" cy="5" r="0.75" fill="currentColor" />
+              </svg>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[200px] text-center text-xs">
+              Filters 311 Complaints and Crime heatmap layers by year
+            </TooltipContent>
+          </Tooltip>
         </span>
         <span className="text-[0.65rem] font-semibold tabular-nums">
           {selectedYear ?? years[years.length - 1]}
@@ -86,7 +99,7 @@ export function TimeRangeSlider() {
         onValueChange={handleYearChange}
       />
 
-      <div className="mt-1 flex select-none items-center justify-between px-[7px] text-[0.55rem] text-muted-foreground">
+      <div className="mt-0.5 flex select-none items-center justify-between px-[7px] text-[0.55rem] text-muted-foreground">
         {years.map((y, i) => (
           <div key={y} className="flex w-0 justify-center">
             {i === 0 || i === years.length - 1 ? (

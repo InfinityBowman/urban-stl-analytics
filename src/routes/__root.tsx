@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import appCss from '../styles.css?url'
 import { Nav } from '@/components/Nav'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -59,11 +60,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function RootLayout() {
   return (
-    <>
+    <TooltipProvider delayDuration={200}>
       <Nav />
       <main>
         <Outlet />
       </main>
-    </>
+    </TooltipProvider>
   )
 }

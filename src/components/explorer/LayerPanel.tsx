@@ -87,28 +87,30 @@ export function LayerPanel() {
           <span className="text-[0.8rem] font-semibold tracking-tight text-foreground">
             Layers
           </span>
-          {activeCount > 0 && (
-            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[0.6rem] font-bold tabular-nums text-primary">
-              {activeCount}
-            </span>
-          )}
+          <span className={cn(
+            'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[0.6rem] font-bold tabular-nums text-primary transition-opacity duration-150',
+            activeCount > 0 ? 'opacity-100' : 'opacity-0',
+          )}>
+            {activeCount || 0}
+          </span>
         </div>
-        {activeCount > 0 && (
-          <button
-            onClick={() => {
-              for (const key of Object.keys(state.layers) as Array<
-                keyof LayerToggles
-              >) {
-                if (state.layers[key]) {
-                  dispatch({ type: 'TOGGLE_LAYER', layer: key })
-                }
+        <button
+          onClick={() => {
+            for (const key of Object.keys(state.layers) as Array<
+              keyof LayerToggles
+            >) {
+              if (state.layers[key]) {
+                dispatch({ type: 'TOGGLE_LAYER', layer: key })
               }
-            }}
-            className="text-[0.62rem] font-medium text-foreground/55 transition-colors hover:text-foreground"
-          >
-            Clear all
-          </button>
-        )}
+            }
+          }}
+          className={cn(
+            'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
+            activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+          )}
+        >
+          Clear all
+        </button>
       </div>
 
       {/* Layer list */}
