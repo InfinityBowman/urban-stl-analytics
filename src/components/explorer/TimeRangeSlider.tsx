@@ -148,17 +148,12 @@ export function TimeRangeSlider() {
                 <circle cx="8" cy="5" r="0.75" fill="currentColor" />
               </svg>
             </TooltipTrigger>
-<<<<<<< HEAD
-            <TooltipContent side="top" className="max-w-[200px] text-center text-xs">
-              Filters 311 Complaints and Crime heatmap layers by year. Enable Forecast to predict future trends.
-=======
             <TooltipContent
               side="top"
               className="max-w-[200px] text-center text-xs"
             >
               Filters 311 Complaints and Crime heatmap layers by year. Enable
               Forecast to predict future trends.
->>>>>>> 32296c2 (your commit message)
             </TooltipContent>
           </Tooltip>
         </span>
@@ -187,33 +182,6 @@ export function TimeRangeSlider() {
         )}
       />
 
-<<<<<<< HEAD
-      <div className="mt-0.5 flex select-none items-center justify-between px-[7px] text-[0.55rem] text-muted-foreground">
-        {years.map((y, i) => (
-          <div key={y} className="flex w-0 justify-center">
-            {i === 0 || i === years.length - 1 ? (
-              <span
-                className={cn(
-                  'whitespace-nowrap',
-                  y > (historicalYears[historicalYears.length - 1] ?? 0) &&
-                    'text-orange-500',
-                )}
-              >
-                {y}
-              </span>
-            ) : (
-              <span
-                className={cn(
-                  'h-1.5 w-px',
-                  y > (historicalYears[historicalYears.length - 1] ?? 0)
-                    ? 'bg-orange-400/50'
-                    : 'bg-muted-foreground/30',
-                )}
-              />
-            )}
-          </div>
-        ))}
-=======
       <div className="mt-1 flex select-none items-center justify-between">
         <div className="flex w-0 justify-center px-[7px] text-[0.55rem] text-muted-foreground">
           {years.map((y, i) => (
@@ -270,7 +238,6 @@ export function TimeRangeSlider() {
           </svg>
           Predictive Forecast
         </button>
->>>>>>> 32296c2 (your commit message)
       </div>
     </div>
   )

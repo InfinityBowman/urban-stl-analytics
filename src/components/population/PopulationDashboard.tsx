@@ -1,38 +1,9 @@
-<<<<<<< HEAD
-=======
 import { useState } from 'react'
->>>>>>> 32296c2 (your commit message)
 import { Link } from '@tanstack/react-router'
 import { EducationCard } from './EducationCard'
 import { DemographicsCard } from './DemographicsCard'
 import { HousingCard } from './HousingCard'
 import { InfrastructureCard } from './InfrastructureCard'
-<<<<<<< HEAD
-
-export function PopulationDashboard() {
-  return (
-    <div className="flex flex-col">
-      <div className="border-b border-border/60 bg-gradient-to-r from-card to-card/50 px-6 py-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
-          STL Population: The Exodus & The Offset
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Understanding the drivers of population change in St. Louis
-        </p>
-      </div>
-
-      <div className="relative p-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <EducationCard />
-          <DemographicsCard />
-          <HousingCard />
-          <InfrastructureCard />
-        </div>
-
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-          <MigrationBadge />
-        </div>
-=======
 import { MigrationReasonsCard } from './MigrationReasonsCard'
 import { DestinationsCard } from './DestinationsCard'
 import { PopulationHistoryChart } from './PopulationHistoryChart'
@@ -85,18 +56,13 @@ export function PopulationDashboard() {
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'history' && <HistoryTab />}
         {activeTab === 'migration' && <MigrationTab />}
->>>>>>> 32296c2 (your commit message)
       </div>
 
       <div className="border-t border-border/60 bg-muted/30 px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="text-xs text-muted-foreground">
-<<<<<<< HEAD
-            Data sources: US Census Bureau, SLMPD, SLPS, 311 Service Center
-=======
             Data sources: US Census Bureau (1790-2024), IRS Migration Data,
             SLPS, SLMPD, Missouri Dept. of Education
->>>>>>> 32296c2 (your commit message)
           </div>
           <Link
             to="/"
@@ -126,11 +92,6 @@ export function PopulationDashboard() {
   )
 }
 
-<<<<<<< HEAD
-function MigrationBadge() {
-  return (
-    <div className="pointer-events-auto flex flex-col items-center rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/90 to-emerald-900/80 px-4 py-3 shadow-lg backdrop-blur-sm">
-=======
 function OverviewTab() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -182,7 +143,6 @@ function QuickStats() {
 
   return (
     <div className="flex flex-col items-center rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/90 to-emerald-900/80 px-4 py-4 shadow-lg backdrop-blur-sm">
->>>>>>> 32296c2 (your commit message)
       <div className="flex items-center gap-1.5 text-[0.6rem] font-bold uppercase tracking-wider text-emerald-400/80">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <path
@@ -201,13 +161,6 @@ function QuickStats() {
         </svg>
         International Migration Offset
       </div>
-<<<<<<< HEAD
-      <div className="mt-1 text-xl font-extrabold tabular-nums text-emerald-400">
-        +12,375
-      </div>
-      <div className="text-[0.55rem] text-emerald-400/60">
-        Preventing total population crash
-=======
       <div className="mt-1 text-2xl font-extrabold tabular-nums text-emerald-400">
         +{stats.current.year === 2024 ? '4,125' : '3,475'}
       </div>
@@ -288,7 +241,7 @@ function DecadeBreakdown() {
                   </span>
                 </div>
                 <div className="mt-0.5 text-[0.55rem] text-muted-foreground">
-                  {decade.keyEvents.slice(0, 2).join(' • ')}
+                  {decade.keyEvents.slice(0, 2).join(' . ')}
                 </div>
               </div>
             </div>
@@ -311,7 +264,6 @@ function KeyMilestones() {
             <div className="text-[0.6rem] text-muted-foreground">{m.event}</div>
           </div>
         ))}
->>>>>>> 32296c2 (your commit message)
       </div>
     </div>
   )
