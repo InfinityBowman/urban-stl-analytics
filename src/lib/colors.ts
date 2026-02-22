@@ -69,17 +69,39 @@ export const DEMO_COLORS = [
   '#a855f7',
 ]
 
-// Vacancy triage score swatches
-export const VACANCY_SCORE_ITEMS = [
-  { color: '#1a9641', label: '80–100 High' },
-  { color: '#a6d96a', label: '60–79 Moderate' },
-  { color: '#ffffbf', label: '40–59 Low-Mod' },
-  { color: '#fdae61', label: '20–39 Low' },
-  { color: '#d7191c', label: '0–19 Very Low' },
-]
+// Vacancy triage colors — low (red) to high (green), 5 stops
+export const VACANCY_COLORS = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']
 
-// Vacancy triage score color
-export function scoreColor(score: number) {
+const VACANCY_LABELS = ['Bottom 20%', 'Lower', 'Middle', 'Upper', 'Top 20%']
+
+// Compute percentile-based breaks from an array of scores
+export function percentileBreaks(scores: number[], buckets = 5): number[] {
+  if (scores.length === 0) return Array.from({ length: buckets }, () => 0)
+  const sorted = [...scores].sort((a, b) => a - b)
+  return Array.from({ length: buckets }, (_, i) => {
+    const idx = Math.min(Math.floor((i / buckets) * sorted.length), sorted.length - 1)
+    return sorted[idx]
+  })
+}
+
+// Build legend items from percentile breaks
+export function vacancyLegendItems(breaks: number[]) {
+  return VACANCY_COLORS.map((color, i) => {
+    const lo = breaks[i] ?? 0
+    const hi = i < breaks.length - 1 ? (breaks[i + 1] ?? 100) - 1 : 100
+    return { color, label: `${VACANCY_LABELS[i]} (${lo}–${hi})` }
+  }).reverse()
+}
+
+// Vacancy triage score color (percentile-aware)
+export function scoreColor(score: number, breaks?: number[]) {
+  if (breaks && breaks.length === 5) {
+    for (let i = breaks.length - 1; i >= 0; i--) {
+      if (score >= breaks[i]) return VACANCY_COLORS[i]
+    }
+    return VACANCY_COLORS[0]
+  }
+  // Fallback to fixed thresholds
   if (score >= 80) return '#1a9641'
   if (score >= 60) return '#a6d96a'
   if (score >= 40) return '#ffffbf'

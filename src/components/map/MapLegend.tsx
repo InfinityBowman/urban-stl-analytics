@@ -39,14 +39,14 @@ export interface SwatchItem {
 }
 
 interface SwatchSectionProps {
-  title: string
+  title?: string
   items: Array<SwatchItem>
 }
 
 export function SwatchSection({ title, items }: SwatchSectionProps) {
   return (
     <div>
-      <div className="mb-1 font-semibold text-foreground">{title}</div>
+      {title && <div className="mb-1 font-semibold text-foreground">{title}</div>}
       <div className="flex flex-col gap-0.5">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useData, useExplorer } from '../ExplorerProvider'
+import { VACANCY_COLORS, percentileBreaks } from '@/lib/colors'
 
 export function VacancyLayer() {
   const { state } = useExplorer()
@@ -32,6 +33,11 @@ export function VacancyLayer() {
     })
   }, [data.vacancyData, state.subToggles])
 
+  const breaks = useMemo(
+    () => percentileBreaks(filtered.map((p) => p.triageScore)),
+    [filtered],
+  )
+
   const markersGeo = useMemo(
     () => ({
       type: 'FeatureCollection' as const,
@@ -53,6 +59,13 @@ export function VacancyLayer() {
     [filtered],
   )
 
+  const colorExpr: mapboxgl.Expression = [
+    'step',
+    ['get', 'score'],
+    VACANCY_COLORS[0],
+    ...breaks.slice(1).flatMap((b, i) => [b, VACANCY_COLORS[i + 1]]),
+  ]
+
   if (!data.vacancyData) return null
 
   return (
@@ -67,19 +80,7 @@ export function VacancyLayer() {
             6,
             4,
           ],
-          'circle-color': [
-            'step',
-            ['get', 'score'],
-            '#d7191c',
-            20,
-            '#fdae61',
-            40,
-            '#ffffbf',
-            60,
-            '#a6d96a',
-            80,
-            '#1a9641',
-          ],
+          'circle-color': colorExpr,
           'circle-opacity': 0.85,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 0.5,

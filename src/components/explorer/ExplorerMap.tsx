@@ -16,10 +16,16 @@ import {
   SymbolSection,
 } from '@/components/map/MapLegend'
 import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover'
+import {
   CHORO_COLORS,
   CRIME_COLORS,
   DEMO_COLORS,
-  VACANCY_SCORE_ITEMS,
+  percentileBreaks,
+  vacancyLegendItems,
 } from '@/lib/colors'
 
 export function ExplorerMap() {
@@ -157,6 +163,11 @@ export function ExplorerMap() {
     return titles[state.subToggles.demographicsMetric] ?? 'Demographics'
   }, [state.layers.demographics, state.subToggles.demographicsMetric])
 
+  const vacancyBreaks = useMemo(() => {
+    if (!state.layers.vacancy || !data.vacancyData) return percentileBreaks([])
+    return percentileBreaks(data.vacancyData.map((p) => p.triageScore))
+  }, [state.layers.vacancy, data.vacancyData])
+
   const hasLegend =
     state.layers.complaints ||
     state.layers.crime ||
@@ -188,7 +199,36 @@ export function ExplorerMap() {
           )}
           {state.layers.vacancy && (
             <>
-              <SwatchSection title="Vacancy Triage" items={VACANCY_SCORE_ITEMS} />
+              <div>
+                <div className="mb-1 flex items-center gap-1">
+                  <span className="font-semibold text-foreground">Vacancy Priority</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-muted text-[0.55rem] font-bold leading-none text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                        ?
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="left" align="start" className="w-56 text-xs">
+                      <p className="mb-1.5 font-semibold">How priority is calculated</p>
+                      <p className="mb-1 text-muted-foreground">
+                        Properties are ranked relative to each other using a weighted score:
+                      </p>
+                      <ul className="space-y-0.5 text-muted-foreground">
+                        <li><span className="font-medium text-foreground">25%</span> Condition (violation severity)</li>
+                        <li><span className="font-medium text-foreground">20%</span> Complaint density</li>
+                        <li><span className="font-medium text-foreground">15%</span> Ownership (LRA/City/Private)</li>
+                        <li><span className="font-medium text-foreground">15%</span> Tax delinquency</li>
+                        <li><span className="font-medium text-foreground">15%</span> Proximity activity</li>
+                        <li><span className="font-medium text-foreground">10%</span> Lot size</li>
+                      </ul>
+                      <p className="mt-1.5 text-muted-foreground">
+                        Colors show percentile rank — each band holds ~20% of properties.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <SwatchSection items={vacancyLegendItems(vacancyBreaks)} />
+              </div>
               <SymbolSection
                 title="Type"
                 items={[
