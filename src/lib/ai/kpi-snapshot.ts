@@ -1,129 +1,37 @@
-import type { ExplorerData, ExplorerState } from '@/lib/explorer-types'
+import type { ExplorerData } from '@/lib/explorer-types'
 
-export function buildKpiSnapshot(state: ExplorerState, data: ExplorerData): string {
-  const lines: Array<string> = []
+/**
+ * Reports which datasets are currently loaded vs null.
+ * The AI uses data retrieval tools to fetch actual numbers on demand.
+ */
+export function buildKpiSnapshot(data: ExplorerData): string {
+  const loaded: Array<string> = []
+  const notLoaded: Array<string> = []
 
-  // Complaints
-  if (data.csbData) {
-    const csb = data.csbData
-    const topCats = Object.entries(csb.categories)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([k, v]) => `${k}: ${v.toLocaleString()}`)
-      .join(', ')
-    lines.push(
-      `311 Complaints (${csb.year}): ${csb.totalRequests.toLocaleString()} total. Top categories: ${topCats}.`,
-    )
+  if (data.csbData) loaded.push('complaints')
+  else notLoaded.push('complaints')
 
-    // Top neighborhoods by complaints
-    const topHoods = Object.entries(csb.neighborhoods)
-      .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 5)
-      .map(([, s]) => `${s.name}: ${s.total}`)
-      .join(', ')
-    lines.push(`Top complaint neighborhoods: ${topHoods}.`)
-  }
+  if (data.crimeData) loaded.push('crime')
+  else notLoaded.push('crime')
 
-  // Crime
-  if (data.crimeData) {
-    const crime = data.crimeData
-    const topOffenses = Object.entries(crime.categories)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([k, v]) => `${k}: ${v.toLocaleString()}`)
-      .join(', ')
-    lines.push(
-      `Crime (${crime.year}): ${crime.totalIncidents.toLocaleString()} incidents, ${crime.totalFelonies.toLocaleString()} felonies, ${crime.totalFirearms.toLocaleString()} firearm incidents.`,
-    )
-    lines.push(`Top offenses: ${topOffenses}.`)
+  if (data.routes || data.stops) loaded.push('transit')
+  else notLoaded.push('transit')
 
-    const topCrimeHoods = Object.entries(crime.neighborhoods)
-      .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 5)
-      .map(([, s]) => `${s.name}: ${s.total}`)
-      .join(', ')
-    lines.push(`Highest crime neighborhoods: ${topCrimeHoods}.`)
-  }
+  if (data.vacancyData && data.vacancyData.length > 0) loaded.push('vacancy')
+  else notLoaded.push('vacancy')
 
-  // Vacancy
-  if (data.vacancyData && data.vacancyData.length > 0) {
-    const vac = data.vacancyData
-    const byOwner: Record<string, number> = {}
-    for (const p of vac) byOwner[p.owner] = (byOwner[p.owner] ?? 0) + 1
-    const ownerBreakdown = Object.entries(byOwner)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ')
-    const avgScore =
-      Math.round((vac.reduce((s, p) => s + p.triageScore, 0) / vac.length) * 10) / 10
-    lines.push(
-      `Vacancy: ${vac.length} properties. Avg triage score: ${avgScore}. By owner: ${ownerBreakdown}.`,
-    )
-  }
+  if (data.arpaData) loaded.push('arpa')
+  else notLoaded.push('arpa')
 
-  // Transit
-  if (data.routes) {
-    lines.push(`Transit: ${data.routes.length} routes.`)
-  }
-  if (data.stops) {
-    lines.push(`Transit stops: ${data.stops.features.length}.`)
-  }
+  if (data.demographicsData && Object.keys(data.demographicsData).length > 0) loaded.push('demographics')
+  else notLoaded.push('demographics')
 
-  // ARPA
-  if (data.arpaData) {
-    const arpa = data.arpaData
-    const topCats = Object.entries(arpa.categoryBreakdown)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([k, v]) => `${k}: $${Math.round(v / 1000)}k`)
-      .join(', ')
-    lines.push(
-      `ARPA Funds: $${Math.round(arpa.totalSpent / 1_000_000 * 10) / 10}M total, ${arpa.projects.length} projects. Top categories: ${topCats}.`,
-    )
-  }
+  if (data.foodDeserts || data.groceryStores) loaded.push('foodAccess')
+  else notLoaded.push('foodAccess')
 
-  // Demographics
-  if (data.demographicsData && Object.keys(data.demographicsData).length > 0) {
-    const demoValues = Object.values(data.demographicsData)
-    const totalPop = demoValues.reduce(
-      (s, d) => s + (d.population['2020'] ?? 0),
-      0,
-    )
-    const avgVacancy =
-      Math.round(
-        (demoValues.reduce(
-          (s, d) => s + d.housing.vacancyRate,
-          0,
-        ) /
-          demoValues.length) *
-          10,
-      ) / 10
-    lines.push(
-      `Demographics: Total pop ~${totalPop.toLocaleString()} (2020 Census). Avg housing vacancy rate: ${avgVacancy}%.`,
-    )
-  }
+  const parts: Array<string> = []
+  if (loaded.length > 0) parts.push(`Loaded: ${loaded.join(', ')}.`)
+  if (notLoaded.length > 0) parts.push(`Still loading: ${notLoaded.join(', ')}.`)
 
-  // Food access
-  if (data.foodDeserts) {
-    lines.push(`Food access: ${data.foodDeserts.features.length} census tracts mapped.`)
-  }
-  if (data.groceryStores) {
-    lines.push(`Grocery stores: ${data.groceryStores.features.length} locations.`)
-  }
-
-  // Selected entity info
-  if (state.selected) {
-    const sel = state.selected
-    if (sel.type === 'neighborhood' && data.csbData?.neighborhoods[sel.id]) {
-      const n = data.csbData.neighborhoods[sel.id]
-      lines.push(
-        `Selected neighborhood "${n.name}": ${n.total} complaints, avg resolution ${Math.round(n.avgResolutionDays)} days.`,
-      )
-    }
-  }
-
-  if (lines.length === 0) {
-    return 'No data loaded yet. Layers need to be enabled to load data.'
-  }
-
-  return lines.join('\n')
+  return parts.join(' ') || 'Data is still loading.'
 }

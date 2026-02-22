@@ -279,6 +279,19 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Eagerly load ALL datasets on mount so the AI chat can query any data
+  // without requiring the user to enable layers first.
+  // The `fetched` ref prevents double-fetching when layers are later toggled.
+  useEffect(() => {
+    loadLayerData('complaints')
+    loadLayerData('crime')
+    loadLayerData('transit')
+    loadLayerData('vacancy')
+    loadLayerData('foodAccess')
+    loadLayerData('arpa')
+    loadLayerData('demographics')
+  }, [loadLayerData])
+
   // Trigger lazy loads when layers are toggled on
   useEffect(() => {
     ;(Object.keys(state.layers) as Array<keyof LayerToggles>).forEach(

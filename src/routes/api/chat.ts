@@ -14,7 +14,12 @@ export const Route = createFileRoute('/api/chat')({
         }
 
         let body: {
-          messages: Array<{ role: string; content: string }>
+          messages: Array<{
+            role: string
+            content?: string
+            tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>
+            tool_call_id?: string
+          }>
           context: string
         }
         try {
@@ -31,8 +36,8 @@ export const Route = createFileRoute('/api/chat')({
         console.log('[chat] context type:', typeof context, '| length:', typeof context === 'string' ? context.length : 'N/A')
         console.log('[chat] messages count:', Array.isArray(messages) ? messages.length : 'not array')
 
-        // Validate inputs to prevent abuse
-        if (!Array.isArray(messages) || messages.length > 50) {
+        // Validate inputs to prevent abuse (higher limit for multi-turn tool loops)
+        if (!Array.isArray(messages) || messages.length > 100) {
           console.log('[chat] REJECTED: invalid messages')
           return new Response(
             JSON.stringify({ error: 'Invalid messages' }),
@@ -47,13 +52,39 @@ export const Route = createFileRoute('/api/chat')({
           )
         }
 
-        const sanitizedMessages = messages.map((m) => ({
-          role: m.role === 'user' ? 'user' as const : 'assistant' as const,
-          content: typeof m.content === 'string' ? m.content.slice(0, 8000) : '',
-        }))
+        const sanitizedMessages = messages.map((m) => {
+          // Tool result messages (role: 'tool')
+          if (m.role === 'tool' && m.tool_call_id) {
+            return {
+              role: 'tool' as const,
+              tool_call_id: m.tool_call_id,
+              content: typeof m.content === 'string' ? m.content.slice(0, 8000) : '',
+            }
+          }
+          // Assistant messages with tool_calls (for multi-turn context)
+          if (m.role === 'assistant' && m.tool_calls && Array.isArray(m.tool_calls)) {
+            return {
+              role: 'assistant' as const,
+              content: typeof m.content === 'string' ? m.content : null,
+              tool_calls: m.tool_calls.slice(0, 20).map((tc) => ({
+                id: String(tc.id).slice(0, 64),
+                type: 'function' as const,
+                function: {
+                  name: String(tc.function.name).slice(0, 64),
+                  arguments: String(tc.function.arguments).slice(0, 8000),
+                },
+              })),
+            }
+          }
+          // Regular user/assistant messages
+          return {
+            role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+            content: typeof m.content === 'string' ? m.content.slice(0, 8000) : '',
+          }
+        })
 
         const openRouterBody = {
-          model: 'arcee-ai/trinity-large-preview:free',
+          model: 'z-ai/glm-5',
           stream: true,
           messages: [{ role: 'system', content: context }, ...sanitizedMessages],
           tools: TOOL_DEFINITIONS,
@@ -126,9 +157,6 @@ export const Route = createFileRoute('/api/chat')({
                 if (done) break
 
                 buffer += decoder.decode(value, { stream: true })
-                // Flush any remaining bytes held by the TextDecoder
-                const flushed = decoder.decode()
-                if (flushed) buffer += flushed
                 const lines = buffer.split('\n')
                 buffer = lines.pop() ?? ''
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
+  Delete02Icon,
   Search01Icon,
   SentIcon,
 } from '@hugeicons/core-free-icons'
@@ -10,8 +11,10 @@ import { useChartBuilder } from './analytics/chart-builder/useChartBuilder'
 import type { ActionResult } from '@/lib/ai/action-executor'
 import { executeToolCall } from '@/lib/ai/action-executor'
 import { commandBarEvents } from '@/lib/ai/command-bar-events'
+import { executeDataTool } from '@/lib/ai/data-executor'
 import { buildKpiSnapshot } from '@/lib/ai/kpi-snapshot'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
+import type { ToolCall } from '@/lib/ai/use-chat'
 import { useChat } from '@/lib/ai/use-chat'
 import { cn } from '@/lib/utils'
 
@@ -33,7 +36,7 @@ export function CommandBar() {
   const { state, dispatch } = useExplorer()
   const data = useData()
   const [, chartDispatch] = useChartBuilder()
-  const { messages, isStreaming, sendMessage, toolCalls } = useChat()
+  const { messages, isStreaming, sendMessage, toolCalls, reset } = useChat()
 
   // Refs for values needed in tool execution (avoids re-running effect on state changes)
   const stateRef = useRef(state)
@@ -101,6 +104,13 @@ export function CommandBar() {
     setActionResults(results)
   }, [toolCalls, dispatch, chartDispatch])
 
+  // Resolve data tool calls against current ExplorerData
+  const resolveDataTools = useCallback(
+    (tools: Array<ToolCall>) =>
+      tools.map((tc) => executeDataTool(tc, dataRef.current)),
+    [],
+  )
+
   const handleSubmit = useCallback(
     async (text?: string) => {
       const query = text ?? input.trim()
@@ -109,11 +119,11 @@ export function CommandBar() {
       setInput('')
       setActionResults([])
 
-      const kpiSnapshot = buildKpiSnapshot(state, data)
+      const kpiSnapshot = buildKpiSnapshot(data)
       const context = buildSystemPrompt(state, kpiSnapshot, data)
-      await sendMessage(query, context)
+      await sendMessage(query, context, resolveDataTools)
     },
-    [input, isStreaming, state, data, sendMessage],
+    [input, isStreaming, state, data, sendMessage, resolveDataTools],
   )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,12 +158,26 @@ export function CommandBar() {
             Ask AI
           </span>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                reset()
+                setActionResults([])
+              }}
+              title="New chat"
+              className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={2} />
+            </button>
+          )}
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       {/* Messages area */}
@@ -249,7 +273,10 @@ export function CommandBar() {
           disabled={isStreaming}
         />
         {isStreaming ? (
-          <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[0.6rem] text-muted-foreground/60">thinking...</span>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+          </div>
         ) : (
           <button
             onClick={() => handleSubmit()}
