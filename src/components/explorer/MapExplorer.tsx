@@ -11,7 +11,7 @@ function ExplorerLayout() {
   return (
     <div
       className={cn(
-        'grid h-[calc(100vh-3.5rem-1px)] w-full transition-[grid-template-columns] duration-300',
+        'grid h-[calc(100vh-2.5rem-1px)] w-full transition-[grid-template-columns] duration-300',
         state.detailPanelOpen
           ? 'grid-cols-[280px_1fr_380px]'
           : 'grid-cols-[280px_1fr_0px]',
