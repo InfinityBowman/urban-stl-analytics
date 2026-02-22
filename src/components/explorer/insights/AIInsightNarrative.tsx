@@ -32,7 +32,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     text: string
   }> = []
 
+<<<<<<< HEAD
   // Score trend analysis
+=======
+>>>>>>> 32296c2 (your commit message)
   if (data.scoreChange > 5) {
     highlights.push({
       type: 'positive',
@@ -45,7 +48,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     })
   }
 
+<<<<<<< HEAD
   // Complaints analysis
+=======
+>>>>>>> 32296c2 (your commit message)
   if (data.complaints.resolutionChange > 20) {
     highlights.push({
       type: 'positive',
@@ -64,7 +70,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     })
   }
 
+<<<<<<< HEAD
   // Transit analysis
+=======
+>>>>>>> 32296c2 (your commit message)
   if (data.transit.routesNearby >= 5) {
     highlights.push({
       type: 'positive',
@@ -80,7 +89,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     })
   }
 
+<<<<<<< HEAD
   // Vacancy analysis
+=======
+>>>>>>> 32296c2 (your commit message)
   if (data.vacancy.hotspots > 3) {
     highlights.push({
       type: 'negative',
@@ -93,7 +105,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     })
   }
 
+<<<<<<< HEAD
   // Food access
+=======
+>>>>>>> 32296c2 (your commit message)
   if (data.foodAccess.nearestGrocery > 1.5) {
     highlights.push({
       type: 'negative',
@@ -106,7 +121,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     })
   }
 
+<<<<<<< HEAD
   // Generate narrative summary
+=======
+>>>>>>> 32296c2 (your commit message)
   const positiveCount = highlights.filter((h) => h.type === 'positive').length
   const negativeCount = highlights.filter((h) => h.type === 'negative').length
 
@@ -119,7 +137,10 @@ function generateInsights(data: NeighborhoodInsightData): {
     summary = `${data.name} shows mixed indicators. `
   }
 
+<<<<<<< HEAD
   // Add top insight to summary
+=======
+>>>>>>> 32296c2 (your commit message)
   if (highlights.length > 0) {
     summary += highlights[0].text + '.'
   }
@@ -135,7 +156,10 @@ function getMockInsightData(
   nearestGroceryDist: number,
   vacancyCount: number,
 ): NeighborhoodInsightData {
+<<<<<<< HEAD
   // Generate deterministic but varied mock data based on neighborhood name
+=======
+>>>>>>> 32296c2 (your commit message)
   const seed = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
   const rand = (min: number, max: number) => min + ((seed * 7) % (max - min))
 
