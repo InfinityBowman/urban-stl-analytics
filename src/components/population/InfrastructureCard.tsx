@@ -99,33 +99,33 @@ export function InfrastructureCard({ className }: { className?: string }) {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-lg bg-red-500/10 p-2 text-center">
-            <div className="text-lg font-bold text-red-400">
+          <div className="rounded-lg bg-muted px-2.5 py-1.5 text-center">
+            <div className="text-sm font-bold text-red-400">
               {cityVsCountyComparison.city.vacantProperties.toLocaleString()}
             </div>
-            <div className="text-[0.5rem] text-muted-foreground">
+            <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
               Vacant Properties
             </div>
           </div>
-          <div className="rounded-lg bg-orange-500/10 p-2 text-center">
-            <div className="text-lg font-bold text-orange-400">
+          <div className="rounded-lg bg-muted px-2.5 py-1.5 text-center">
+            <div className="text-sm font-bold text-orange-400">
               {cityVsCountyComparison.city.schoolRating}
             </div>
-            <div className="text-[0.5rem] text-muted-foreground">
+            <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
               Avg School Rating
             </div>
           </div>
-          <div className="rounded-lg bg-purple-500/10 p-2 text-center">
-            <div className="text-lg font-bold text-purple-400">
+          <div className="rounded-lg bg-muted px-2.5 py-1.5 text-center">
+            <div className="text-sm font-bold text-purple-400">
               {cityVsCountyComparison.city.propertyTaxRate}%
             </div>
-            <div className="text-[0.5rem] text-muted-foreground">
+            <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
               Property Tax Rate
             </div>
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg bg-red-500/10 px-3 py-2">
+        <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
           <div className="text-[0.6rem] font-semibold text-red-400">
             {highVacancyHoods} neighborhoods with 30%+ vacancy rate
           </div>

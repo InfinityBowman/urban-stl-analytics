@@ -59,7 +59,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
       {/* Name + ID + Composite score */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-base font-bold leading-tight">{hood.name}</div>
+          <div className="text-base font-bold leading-tight">{metrics.name}</div>
           <span className="mt-0.5 inline-block rounded-full bg-primary/15 px-2 py-0.5 text-[0.6rem] font-semibold text-primary">
             #{hoodKey}
           </span>
@@ -76,7 +76,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
 
       {/* AI Insights */}
       <AIInsightNarrative
-        name={hood.name}
+        name={metrics.name}
         compositeScore={metrics.compositeScore}
         totalComplaints={hood.total}
         stopsNearby={metrics.stopsNearby}
