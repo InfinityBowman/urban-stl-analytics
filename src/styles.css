@@ -233,6 +233,40 @@ table tbody tr {
   transition: background-color 0.15s ease;
 }
 
+/* ── Layer panel range slider ──────────────────────────────── */
+.layer-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: oklch(0.7 0.01 260 / 0.2);
+  outline: none;
+}
+.layer-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--color-background);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.layer-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.layer-range-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--color-background);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
+  cursor: pointer;
+}
+
 /* ── Mapbox cleanup ──────────────────────────────────────── */
 
 /* Hide Mapbox logo */

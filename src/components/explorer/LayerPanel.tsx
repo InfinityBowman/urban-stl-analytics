@@ -1,107 +1,241 @@
 import { useMemo } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  Megaphone01Icon,
+  AlertDiamondIcon,
+  Bus01Icon,
+  Building03Icon,
+  Store01Icon,
+  UserGroupIcon,
+  DollarCircleIcon,
+} from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
 import type { LayerToggles, SubToggles } from '@/lib/explorer-types'
 import { cn } from '@/lib/utils'
+
+type IconType = typeof Megaphone01Icon
 
 const LAYER_CONFIG: Array<{
   key: keyof LayerToggles
   label: string
   color: string
   desc: string
+  icon: IconType
 }> = [
   {
     key: 'complaints',
     label: '311 Complaints',
     color: '#6366f1',
     desc: 'Complaint density by neighborhood',
+    icon: Megaphone01Icon,
   },
   {
     key: 'crime',
     label: 'Crime',
     color: '#f97316',
     desc: 'SLMPD crime incidents',
+    icon: AlertDiamondIcon,
   },
   {
     key: 'transit',
     label: 'Transit',
     color: '#60a5fa',
     desc: 'Stops, routes, and walksheds',
+    icon: Bus01Icon,
   },
   {
     key: 'vacancy',
     label: 'Vacancy',
     color: '#f59e0b',
     desc: 'Vacant property triage scores',
+    icon: Building03Icon,
   },
   {
     key: 'foodAccess',
     label: 'Food Access',
     color: '#ef4444',
-    desc: 'Food desert tracts and grocery stores',
+    desc: 'Food desert tracts & grocery stores',
+    icon: Store01Icon,
   },
   {
     key: 'demographics',
     label: 'Demographics',
     color: '#a855f7',
-    desc: 'Census population and housing data',
+    desc: 'Census population & housing data',
+    icon: UserGroupIcon,
   },
   {
     key: 'arpa',
     label: 'ARPA Funds',
     color: '#10b981',
     desc: 'Federal relief spending analytics',
+    icon: DollarCircleIcon,
   },
 ]
 
 export function LayerPanel() {
   const { state, dispatch } = useExplorer()
 
+  const activeCount = Object.values(state.layers).filter(Boolean).length
+
   return (
-    <div className="flex flex-col gap-0.5 p-3">
-      <div className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-muted-foreground">
-        Layers
-      </div>
-
-      {LAYER_CONFIG.map((layer) => (
-        <div key={layer.key}>
-          <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent">
-            <input
-              type="checkbox"
-              checked={state.layers[layer.key]}
-              onChange={() =>
-                dispatch({ type: 'TOGGLE_LAYER', layer: layer.key })
-              }
-              className="h-4 w-4 accent-primary"
-            />
-            <span
-              className="h-3 w-3 shrink-0 rounded-full"
-              style={{ background: layer.color }}
-            />
-            <div className="min-w-0">
-              <div className="text-xs font-semibold">{layer.label}</div>
-              <div className="text-[0.6rem] text-muted-foreground">
-                {layer.desc}
-              </div>
-            </div>
-          </label>
-
-          {/* Contextual sub-filters when layer is active */}
-          {state.layers[layer.key] && (
-            <div className="ml-8 mt-1 mb-2 flex flex-col gap-1.5">
-              <LayerContent layerKey={layer.key} />
-            </div>
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[0.8rem] font-semibold tracking-tight text-foreground">
+            Layers
+          </span>
+          {activeCount > 0 && (
+            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[0.6rem] font-bold tabular-nums text-primary">
+              {activeCount}
+            </span>
           )}
         </div>
-      ))}
+        {activeCount > 0 && (
+          <button
+            onClick={() => {
+              for (const key of Object.keys(state.layers) as Array<
+                keyof LayerToggles
+              >) {
+                if (state.layers[key]) {
+                  dispatch({ type: 'TOGGLE_LAYER', layer: key })
+                }
+              }
+            }}
+            className="text-[0.6rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Layer list */}
+      <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 pb-3 pt-1">
+        {LAYER_CONFIG.map((layer) => {
+          const isActive = state.layers[layer.key]
+          return (
+            <LayerCard
+              key={layer.key}
+              layer={layer}
+              isActive={isActive}
+              onToggle={() =>
+                dispatch({ type: 'TOGGLE_LAYER', layer: layer.key })
+              }
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function LayerCard({
+  layer,
+  isActive,
+  onToggle,
+}: {
+  layer: (typeof LAYER_CONFIG)[number]
+  isActive: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div
+      className={cn(
+        'group relative rounded-lg transition-all duration-200',
+        isActive ? 'bg-accent/70' : 'hover:bg-accent/40',
+      )}
+    >
+      {/* Active indicator bar */}
+      <div
+        className={cn(
+          'absolute top-2.5 bottom-2.5 left-0 w-[3px] rounded-full transition-all duration-200',
+          isActive ? 'opacity-100' : 'opacity-0',
+        )}
+        style={{ background: layer.color }}
+      />
+
+      {/* Main toggle row */}
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left"
+      >
+        {/* Icon */}
+        <div
+          className={cn(
+            'flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all duration-200',
+          )}
+          style={{
+            background: isActive ? layer.color : 'var(--color-muted)',
+          }}
+        >
+          <HugeiconsIcon
+            icon={layer.icon}
+            strokeWidth={2}
+            className={cn(
+              'size-3.5 transition-colors duration-200',
+              isActive ? 'text-white' : 'text-foreground/60',
+            )}
+          />
+        </div>
+
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <div className="text-[0.75rem] font-semibold leading-tight text-foreground">
+            {layer.label}
+          </div>
+          <div className="mt-0.5 text-[0.6rem] leading-tight text-muted-foreground">
+            {layer.desc}
+          </div>
+        </div>
+
+        {/* Toggle switch */}
+        <div
+          className={cn(
+            'relative h-[18px] w-[32px] shrink-0 rounded-full transition-colors duration-200',
+            isActive ? '' : 'bg-border',
+          )}
+          style={{
+            background: isActive ? layer.color : undefined,
+          }}
+        >
+          <div
+            className={cn(
+              'absolute top-[2px] h-[14px] w-[14px] rounded-full shadow-sm transition-all duration-200',
+              isActive
+                ? 'left-[16px] bg-white'
+                : 'left-[2px] bg-muted-foreground/60',
+            )}
+          />
+        </div>
+      </button>
+
+      {/* Expandable filters */}
+      <div
+        className={cn(
+          'grid transition-all duration-200',
+          isActive
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'grid-rows-[0fr] opacity-0',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="px-3.5 pb-2.5 pl-[3.25rem]">
+            <div className="flex flex-col gap-1.5">
+              <LayerContent layerKey={layer.key} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 function LoadingIndicator() {
   return (
-    <div className="flex items-center gap-2 py-1 text-[0.6rem] text-muted-foreground">
-      <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
-      Loading data...
+    <div className="flex items-center gap-2 py-0.5 text-[0.6rem] text-muted-foreground">
+      <div className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-muted-foreground/20 border-t-primary" />
+      Loading data&hellip;
     </div>
   )
 }
@@ -138,6 +272,67 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
   }
 }
 
+/* ── Shared pill toggle ────────────────────────────────── */
+
+function PillToggle({
+  options,
+  value,
+  onChange,
+}: {
+  options: Array<{ value: string; label: string }>
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex gap-0.5 rounded-md bg-muted p-0.5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={cn(
+            'rounded-[5px] px-2 py-[3px] text-[0.6rem] font-semibold transition-all duration-150',
+            value === opt.value
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ── Tag button for categories ─────────────────────────── */
+
+function TagButton({
+  label,
+  isActive,
+  activeClass,
+  onClick,
+}: {
+  label: string
+  isActive: boolean
+  activeClass: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'rounded-md px-1.5 py-[3px] text-[0.58rem] font-semibold transition-all duration-150',
+        isActive
+          ? activeClass
+          : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+/* ── Layer-specific filters ────────────────────────────── */
+
 function ComplaintsFilters() {
   const { state, dispatch } = useExplorer()
   const data = useData()
@@ -152,30 +347,25 @@ function ComplaintsFilters() {
 
   return (
     <>
-      <div className="flex gap-1">
-        {(['choropleth', 'heatmap'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: 'complaintsMode',
-                value: mode,
-              })
-            }
-            className={cn(
-              'rounded px-2 py-0.5 text-[0.65rem] font-medium transition-colors',
-              state.subToggles.complaintsMode === mode
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-accent',
-            )}
-          >
-            {mode === 'choropleth' ? 'Choropleth' : 'Heatmap'}
-          </button>
-        ))}
-      </div>
+      <PillToggle
+        options={[
+          { value: 'choropleth', label: 'Choropleth' },
+          { value: 'heatmap', label: 'Heatmap' },
+        ]}
+        value={state.subToggles.complaintsMode}
+        onChange={(v) =>
+          dispatch({
+            type: 'SET_SUB_TOGGLE',
+            key: 'complaintsMode',
+            value: v,
+          })
+        }
+      />
       <div className="flex flex-wrap gap-1">
-        <button
+        <TagButton
+          label="All"
+          isActive={state.subToggles.complaintsCategory === 'all'}
+          activeClass="bg-indigo-500/20 text-indigo-600 dark:text-indigo-400"
           onClick={() =>
             dispatch({
               type: 'SET_SUB_TOGGLE',
@@ -183,18 +373,13 @@ function ComplaintsFilters() {
               value: 'all',
             })
           }
-          className={cn(
-            'rounded px-1.5 py-0.5 text-[0.6rem] font-medium transition-colors',
-            state.subToggles.complaintsCategory === 'all'
-              ? 'bg-indigo-500/20 text-indigo-400'
-              : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          All
-        </button>
+        />
         {topCategories.map((cat) => (
-          <button
+          <TagButton
             key={cat}
+            label={cat}
+            isActive={state.subToggles.complaintsCategory === cat}
+            activeClass="bg-indigo-500/20 text-indigo-600 dark:text-indigo-400"
             onClick={() =>
               dispatch({
                 type: 'SET_SUB_TOGGLE',
@@ -202,15 +387,7 @@ function ComplaintsFilters() {
                 value: cat,
               })
             }
-            className={cn(
-              'rounded px-1.5 py-0.5 text-[0.6rem] font-medium transition-colors',
-              state.subToggles.complaintsCategory === cat
-                ? 'bg-indigo-500/20 text-indigo-400'
-                : 'bg-muted text-muted-foreground hover:bg-accent',
-            )}
-          >
-            {cat}
-          </button>
+          />
         ))}
       </div>
     </>
@@ -231,30 +408,21 @@ function CrimeFilters() {
 
   return (
     <>
-      <div className="flex gap-1">
-        {(['choropleth', 'heatmap'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: 'crimeMode',
-                value: mode,
-              })
-            }
-            className={cn(
-              'rounded px-2 py-0.5 text-[0.65rem] font-medium transition-colors',
-              state.subToggles.crimeMode === mode
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-accent',
-            )}
-          >
-            {mode === 'choropleth' ? 'Choropleth' : 'Heatmap'}
-          </button>
-        ))}
-      </div>
+      <PillToggle
+        options={[
+          { value: 'choropleth', label: 'Choropleth' },
+          { value: 'heatmap', label: 'Heatmap' },
+        ]}
+        value={state.subToggles.crimeMode}
+        onChange={(v) =>
+          dispatch({ type: 'SET_SUB_TOGGLE', key: 'crimeMode', value: v })
+        }
+      />
       <div className="flex flex-wrap gap-1">
-        <button
+        <TagButton
+          label="All"
+          isActive={state.subToggles.crimeCategory === 'all'}
+          activeClass="bg-orange-500/20 text-orange-600 dark:text-orange-400"
           onClick={() =>
             dispatch({
               type: 'SET_SUB_TOGGLE',
@@ -262,18 +430,13 @@ function CrimeFilters() {
               value: 'all',
             })
           }
-          className={cn(
-            'rounded px-1.5 py-0.5 text-[0.6rem] font-medium transition-colors',
-            state.subToggles.crimeCategory === 'all'
-              ? 'bg-orange-500/20 text-orange-400'
-              : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          All
-        </button>
+        />
         {topCategories.map((cat) => (
-          <button
+          <TagButton
             key={cat}
+            label={cat}
+            isActive={state.subToggles.crimeCategory === cat}
+            activeClass="bg-orange-500/20 text-orange-600 dark:text-orange-400"
             onClick={() =>
               dispatch({
                 type: 'SET_SUB_TOGGLE',
@@ -281,15 +444,7 @@ function CrimeFilters() {
                 value: cat,
               })
             }
-            className={cn(
-              'rounded px-1.5 py-0.5 text-[0.6rem] font-medium transition-colors',
-              state.subToggles.crimeCategory === cat
-                ? 'bg-orange-500/20 text-orange-400'
-                : 'bg-muted text-muted-foreground hover:bg-accent',
-            )}
-          >
-            {cat}
-          </button>
+          />
         ))}
       </div>
     </>
@@ -309,7 +464,7 @@ function TransitFilters() {
     {
       key: 'transitWalkshed',
       label: 'Walk Radius',
-      color: 'rgba(96,165,250,0.3)',
+      color: 'rgba(96,165,250,0.5)',
     },
   ]
 
@@ -318,8 +473,36 @@ function TransitFilters() {
       {toggles.map((t) => (
         <label
           key={t.key}
-          className="flex cursor-pointer items-center gap-2 text-[0.65rem]"
+          className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
         >
+          <div
+            className={cn(
+              'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
+              state.subToggles[t.key]
+                ? 'border-transparent'
+                : 'border-muted-foreground/40 bg-transparent',
+            )}
+            style={{
+              background: state.subToggles[t.key] ? t.color : undefined,
+            }}
+          >
+            {state.subToggles[t.key] && (
+              <svg
+                viewBox="0 0 12 12"
+                className="h-2.5 w-2.5 text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M2.5 6L5 8.5L9.5 3.5" />
+              </svg>
+            )}
+          </div>
+          <span className="text-[0.62rem] font-medium text-foreground/70 transition-colors group-hover/sub:text-foreground">
+            {t.label}
+          </span>
           <input
             type="checkbox"
             checked={state.subToggles[t.key] as boolean}
@@ -330,13 +513,8 @@ function TransitFilters() {
                 value: !state.subToggles[t.key],
               })
             }
-            className="h-3 w-3 accent-primary"
+            className="sr-only"
           />
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: t.color }}
-          />
-          <span className="text-muted-foreground">{t.label}</span>
         </label>
       ))}
     </>
@@ -353,7 +531,7 @@ function VacancyFilters() {
   }, [data.vacancyData])
 
   const selectClass =
-    'w-full rounded border border-border bg-muted px-1.5 py-1 text-[0.65rem] text-foreground'
+    'w-full appearance-none rounded-md border border-border/60 bg-muted/60 px-2 py-1.5 text-[0.62rem] font-medium text-foreground outline-none transition-colors hover:border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20'
 
   return (
     <>
@@ -422,10 +600,16 @@ function VacancyFilters() {
           </option>
         ))}
       </select>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[0.6rem] text-muted-foreground">
-          Min Score: {state.subToggles.vacancyMinScore}
-        </span>
+      {/* Score slider */}
+      <div className="flex flex-col gap-1 pt-0.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[0.58rem] font-medium text-muted-foreground">
+            Min Score
+          </span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[0.58rem] font-bold tabular-nums text-foreground">
+            {state.subToggles.vacancyMinScore}
+          </span>
+        </div>
         <input
           type="range"
           min={0}
@@ -438,7 +622,7 @@ function VacancyFilters() {
               value: +e.target.value,
             })
           }
-          className="w-full accent-primary"
+          className="layer-range-slider w-full"
         />
       </div>
     </>
@@ -448,40 +632,68 @@ function VacancyFilters() {
 function FoodAccessFilters() {
   const { state, dispatch } = useExplorer()
 
+  const toggles = [
+    {
+      key: 'foodDesertTracts' as keyof SubToggles,
+      label: 'Desert Tracts (LILA)',
+      color: '#ef4444',
+    },
+    {
+      key: 'groceryStores' as keyof SubToggles,
+      label: 'Grocery Stores',
+      color: '#10b981',
+    },
+  ]
+
   return (
     <>
-      <label className="flex cursor-pointer items-center gap-2 text-[0.65rem]">
-        <input
-          type="checkbox"
-          checked={state.subToggles.foodDesertTracts}
-          onChange={() =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'foodDesertTracts',
-              value: !state.subToggles.foodDesertTracts,
-            })
-          }
-          className="h-3 w-3 accent-primary"
-        />
-        <span className="h-2 w-2 rounded-full bg-red-500" />
-        <span className="text-muted-foreground">Desert Tracts (LILA)</span>
-      </label>
-      <label className="flex cursor-pointer items-center gap-2 text-[0.65rem]">
-        <input
-          type="checkbox"
-          checked={state.subToggles.groceryStores}
-          onChange={() =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'groceryStores',
-              value: !state.subToggles.groceryStores,
-            })
-          }
-          className="h-3 w-3 accent-primary"
-        />
-        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-        <span className="text-muted-foreground">Grocery Stores</span>
-      </label>
+      {toggles.map((t) => (
+        <label
+          key={t.key}
+          className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
+        >
+          <div
+            className={cn(
+              'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
+              state.subToggles[t.key]
+                ? 'border-transparent'
+                : 'border-muted-foreground/40 bg-transparent',
+            )}
+            style={{
+              background: state.subToggles[t.key] ? t.color : undefined,
+            }}
+          >
+            {state.subToggles[t.key] && (
+              <svg
+                viewBox="0 0 12 12"
+                className="h-2.5 w-2.5 text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M2.5 6L5 8.5L9.5 3.5" />
+              </svg>
+            )}
+          </div>
+          <span className="text-[0.62rem] font-medium text-foreground/70 transition-colors group-hover/sub:text-foreground">
+            {t.label}
+          </span>
+          <input
+            type="checkbox"
+            checked={state.subToggles[t.key] as boolean}
+            onChange={() =>
+              dispatch({
+                type: 'SET_SUB_TOGGLE',
+                key: t.key,
+                value: !state.subToggles[t.key],
+              })
+            }
+            className="sr-only"
+          />
+        </label>
+      ))}
     </>
   )
 }
@@ -501,8 +713,11 @@ function DemographicsFilters() {
   return (
     <div className="flex flex-wrap gap-1">
       {metrics.map((m) => (
-        <button
+        <TagButton
           key={m.value}
+          label={m.label}
+          isActive={state.subToggles.demographicsMetric === m.value}
+          activeClass="bg-purple-500/20 text-purple-600 dark:text-purple-400"
           onClick={() =>
             dispatch({
               type: 'SET_SUB_TOGGLE',
@@ -510,15 +725,7 @@ function DemographicsFilters() {
               value: m.value,
             })
           }
-          className={cn(
-            'rounded px-1.5 py-0.5 text-[0.6rem] font-medium transition-colors',
-            state.subToggles.demographicsMetric === m.value
-              ? 'bg-purple-500/20 text-purple-400'
-              : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          {m.label}
-        </button>
+        />
       ))}
     </div>
   )
@@ -526,8 +733,9 @@ function DemographicsFilters() {
 
 function ArpaFilters() {
   return (
-    <div className="text-[0.6rem] text-muted-foreground">
-      Analytics-only layer (no map visualization)
+    <div className="flex items-center gap-1.5 text-[0.6rem] text-muted-foreground">
+      <div className="h-1 w-1 rounded-full bg-emerald-500/60" />
+      Analytics-only layer
     </div>
   )
 }
