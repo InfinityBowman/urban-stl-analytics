@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { useData, useExplorer } from '@/components/explorer/ExplorerProvider'
+import { animate, motion, useMotionValue } from 'motion/react'
+import { useExplorer } from '@/components/explorer/ExplorerProvider'
 import { ComplaintsAnalytics } from './analytics/ComplaintsAnalytics'
 import { TransitAnalytics } from './analytics/TransitAnalytics'
 import { VacancyAnalytics } from './analytics/VacancyAnalytics'
 import { NeighborhoodAnalytics } from './analytics/NeighborhoodAnalytics'
 import { ChartBuilder } from './analytics/ChartBuilder'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 
 export function AnalyticsPanel() {
   const { state, dispatch } = useExplorer()
-  const data = useData()
   const dragRef = useRef<{ startY: number; startH: number } | null>(null)
   const heightRef = useRef(state.analyticsPanelHeight)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const clipHeight = useMotionValue(state.analyticsPanelExpanded ? state.analyticsPanelHeight : 0)
 
   useEffect(() => {
     heightRef.current = state.analyticsPanelHeight
@@ -31,18 +29,23 @@ export function AnalyticsPanel() {
   const onDragStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
+      isDragging.current = true
       dragRef.current = { startY: e.clientY, startH: heightRef.current }
 
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current) return
         const delta = dragRef.current.startY - ev.clientY
-        dispatch({
-          type: 'SET_ANALYTICS_HEIGHT',
-          height: dragRef.current.startH + delta,
-        })
+        const next = Math.min(800, Math.max(150, dragRef.current.startH + delta))
+        // Write directly to motion value — no React re-render, no animation
+        clipHeight.jump(next)
+        if (contentRef.current) contentRef.current.style.height = `${next}px`
       }
 
       const onUp = () => {
+        // Commit final height to state
+        const final = Math.round(clipHeight.get())
+        isDragging.current = false
+        dispatch({ type: 'SET_ANALYTICS_HEIGHT', height: final })
         dragRef.current = null
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', onUp)
@@ -51,7 +54,7 @@ export function AnalyticsPanel() {
       window.addEventListener('mousemove', onMove)
       window.addEventListener('mouseup', onUp)
     },
-    [dispatch],
+    [dispatch, clipHeight],
   )
 
   const hasActiveLayer =
@@ -68,64 +71,49 @@ export function AnalyticsPanel() {
     state.layers.vacancy ? <VacancyAnalytics key="vacancy" /> : null,
   ].filter(Boolean)
 
+  const expanded = state.analyticsPanelExpanded
+
   return (
-    <Collapsible
-      open={state.analyticsPanelExpanded}
-      onOpenChange={() => dispatch({ type: 'TOGGLE_ANALYTICS' })}
-      className="bg-card"
-    >
-      <CollapsibleTrigger className="flex w-full items-center justify-between border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-accent/50">
+    <div className="bg-card">
+      {/* Drag handle — instant show/hide via height, no animation */}
+      <div
+        onMouseDown={expanded ? onDragStart : undefined}
+        className="group flex items-center justify-center overflow-hidden border-b border-border/40 hover:bg-accent/30"
+        style={{
+          height: expanded ? 8 : 0,
+          cursor: expanded ? 'row-resize' : undefined,
+        }}
+      >
+        <div className="h-0.5 w-8 rounded-full bg-muted-foreground/30 transition-colors group-hover:bg-muted-foreground/60" />
+      </div>
+
+      {/* Toggle button */}
+      <button
+        onClick={() => {
+          const next = !expanded
+          dispatch({ type: 'TOGGLE_ANALYTICS' })
+          animate(clipHeight, next ? state.analyticsPanelHeight : 0, {
+            type: 'tween',
+            duration: 0.25,
+            ease: 'easeOut',
+          })
+        }}
+        className="flex w-full items-center justify-between border-b border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-accent/50"
+      >
         <span className="uppercase tracking-widest">Analytics</span>
         <span className="text-[0.6rem]">
-          {state.analyticsPanelExpanded ? 'Collapse' : 'Expand'}
+          {expanded ? 'Collapse' : 'Expand'}
         </span>
-      </CollapsibleTrigger>
+      </button>
 
-      {/* Collapsed KPI strip */}
-      {!state.analyticsPanelExpanded && (
-        <div className="flex gap-4 overflow-x-auto px-4 py-2">
-          {state.layers.complaints && data.csbData && (
-            <KpiChip
-              label="311 Requests"
-              value={data.csbData.totalRequests.toLocaleString()}
-            />
-          )}
-          {state.layers.transit && data.stops && (
-            <KpiChip
-              label="Transit Stops"
-              value={data.stops.features.length.toLocaleString()}
-            />
-          )}
-          {state.layers.vacancy && data.vacancyData && (
-            <KpiChip
-              label="Vacant Properties"
-              value={data.vacancyData.length.toLocaleString()}
-            />
-          )}
-          {state.layers.foodAccess && data.foodDeserts && (
-            <KpiChip
-              label="LILA Tracts"
-              value={String(
-                data.foodDeserts.features.filter(
-                  (f) => (f.properties as { lila?: boolean }).lila,
-                ).length,
-              )}
-            />
-          )}
-        </div>
-      )}
-
-      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-[collapse-up_200ms_ease-out] data-[state=open]:animate-[collapse-down_250ms_ease-out]">
-        {/* Drag handle */}
+      {/* Charts — always mounted, motion handles the clip animation */}
+      <motion.div
+        style={{ height: clipHeight }}
+        className="overflow-hidden"
+      >
         <div
-          onMouseDown={onDragStart}
-          className="group flex h-1.5 cursor-row-resize items-center justify-center border-b border-border/40 hover:bg-accent/30"
-        >
-          <div className="h-0.5 w-8 rounded-full bg-muted-foreground/30 transition-colors group-hover:bg-muted-foreground/60" />
-        </div>
-
-        <div
-          className="overflow-y-auto px-4 py-3"
+          ref={contentRef}
+          className="overflow-y-scroll px-4 py-3"
           style={{ height: state.analyticsPanelHeight }}
         >
           {showNeighborhood ? (
@@ -147,16 +135,7 @@ export function AnalyticsPanel() {
             </div>
           )}
         </div>
-      </CollapsibleContent>
-    </Collapsible>
-  )
-}
-
-function KpiChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex shrink-0 items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-      <span className="text-[0.6rem] text-muted-foreground">{label}</span>
-      <span className="text-xs font-bold">{value}</span>
+      </motion.div>
     </div>
   )
 }

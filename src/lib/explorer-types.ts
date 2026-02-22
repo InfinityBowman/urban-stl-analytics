@@ -107,5 +107,5 @@ export const initialExplorerState: ExplorerState = {
   selected: null,
   detailPanelOpen: false,
   analyticsPanelExpanded: false,
-  analyticsPanelHeight: 300,
+  analyticsPanelHeight: 600,
 }

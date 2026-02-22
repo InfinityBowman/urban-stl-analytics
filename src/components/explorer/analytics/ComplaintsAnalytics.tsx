@@ -62,34 +62,35 @@ export function ComplaintsAnalytics() {
 
       {/* Main charts row — time series wider, categories narrower */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[180px]">
+        <div className="h-[180px] overflow-hidden">
           <TimeSeriesChart
             data={dailyChart}
             barLabel="Daily"
             lineLabel="7d Avg"
+            height={180}
           />
         </div>
-        <div className="h-[180px]">
-          <CategoryBarChart data={categoryChart} horizontal />
+        <div className="h-[180px] overflow-hidden">
+          <CategoryBarChart data={categoryChart} horizontal height={180} />
         </div>
       </div>
 
       {/* Bottom row — hourly, weekday, weather side-by-side */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
+        <div className="overflow-hidden">
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             By Hour
           </div>
           <HourlyChart data={data.csbData.hourly} height={160} />
         </div>
-        <div>
+        <div className="overflow-hidden">
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             By Day
           </div>
           <WeekdayChart weekday={data.csbData.weekday} height={160} />
         </div>
         {weather && (
-          <div>
+          <div className="overflow-hidden">
             <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
               Weather Correlation
             </div>
