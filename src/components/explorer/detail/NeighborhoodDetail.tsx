@@ -3,8 +3,8 @@ import { useData } from '../ExplorerProvider'
 import { haversine, polygonCentroid } from '@/lib/equity'
 import { generateVacancyData } from '@/lib/vacancy-data'
 import { scoreColor } from '@/lib/colors'
-import { cn } from '@/lib/utils'
 import { AIInsightNarrative } from '../insights/AIInsightNarrative'
+import { DetailRow, DetailSection, ScoreBar, MetricCard } from './shared'
 
 export function NeighborhoodDetail({ id }: { id: string }) {
   const data = useData()
@@ -24,8 +24,6 @@ export function NeighborhoodDetail({ id }: { id: string }) {
   const allVacancies = useMemo(() => generateVacancyData(), [])
   const hoodVacancies = useMemo(() => {
     if (!hoodFeature) return []
-    // Use proximity-based matching (within 0.5mi of centroid) instead of
-    // name matching, since CSB and mock data use different neighborhood names
     return allVacancies.filter(
       (p) => haversine(centroid[0], centroid[1], p.lat, p.lng) <= 0.5,
     )
@@ -111,22 +109,22 @@ export function NeighborhoodDetail({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col gap-3 text-xs">
-      <div>
-        <div className="text-base font-bold">{hood.name}</div>
-        <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[0.6rem] font-semibold text-primary">
-          #{hoodKey}
-        </span>
-      </div>
-
-      {/* Composite score */}
-      <div className="rounded-lg border-2 border-primary/30 p-3 text-center">
-        <div className="text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-          Composite Score
+      {/* Name + ID + Composite score */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-base font-bold leading-tight">{hood.name}</div>
+          <span className="mt-0.5 inline-block rounded-full bg-primary/15 px-2 py-0.5 text-[0.6rem] font-semibold text-primary">
+            #{hoodKey}
+          </span>
         </div>
-        <div className="text-2xl font-extrabold text-primary">
-          {compositeScore}
+        <div className="flex shrink-0 flex-col items-center rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
+          <div className="text-xl font-extrabold tabular-nums leading-tight text-primary">
+            {compositeScore}
+          </div>
+          <div className="text-[0.5rem] font-medium uppercase tracking-wider text-muted-foreground">
+            Score
+          </div>
         </div>
-        <div className="text-[0.6rem] text-muted-foreground">/100</div>
       </div>
 
       {/* AI Insights */}
@@ -148,7 +146,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
       </div>
 
       {/* 311 */}
-      <Section title="311 Complaints" color="text-indigo-400">
+      <DetailSection title="311 Complaints" color="text-indigo-400">
         <DetailRow label="Total" value={hood.total.toLocaleString()} />
         <DetailRow label="Closed" value={String(hood.closed)} />
         <DetailRow
@@ -161,10 +159,10 @@ export function NeighborhoodDetail({ id }: { id: string }) {
           .map(([cat, count]) => (
             <DetailRow key={cat} label={cat} value={String(count)} />
           ))}
-      </Section>
+      </DetailSection>
 
       {/* Vacancy */}
-      <Section title="Vacancy" color="text-amber-400">
+      <DetailSection title="Vacancy" color="text-amber-400">
         <DetailRow label="Properties" value={String(hoodVacancies.length)} />
         <DetailRow
           label="LRA Owned"
@@ -172,7 +170,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
         />
         <DetailRow label="Avg Triage Score" value={String(avgVacancyScore)} />
         {hoodVacancies.length > 0 && (
-          <div className="mt-1.5">
+          <div className="pt-2">
             <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
               Top Candidates
             </div>
@@ -186,7 +184,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
                 >
                   <span className="truncate">{p.address}</span>
                   <span
-                    className="font-bold"
+                    className="font-bold tabular-nums"
                     style={{ color: scoreColor(p.triageScore) }}
                   >
                     {p.triageScore}
@@ -195,10 +193,10 @@ export function NeighborhoodDetail({ id }: { id: string }) {
               ))}
           </div>
         )}
-      </Section>
+      </DetailSection>
 
-      {/* Transit */}
-      <Section title="Transit & Food" color="text-purple-400">
+      {/* Transit & Food */}
+      <DetailSection title="Transit & Food" color="text-blue-400">
         <DetailRow label="Stops (0.5mi)" value={String(nearbyStops.length)} />
         <DetailRow
           label="Routes"
@@ -214,58 +212,11 @@ export function NeighborhoodDetail({ id }: { id: string }) {
           value={`${nearestGrocery.name} (${nearestGrocery.dist.toFixed(2)}mi)`}
         />
         {isDesert && (
-          <div className="mt-1 text-[0.65rem] font-semibold text-red-400">
+          <div className="pt-1.5 text-[0.65rem] font-semibold text-red-400">
             In a food desert area
           </div>
         )}
-      </Section>
-    </div>
-  )
-}
-
-function Section({
-  title,
-  color,
-  children,
-}: {
-  title: string
-  color: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="rounded-lg bg-muted p-2.5">
-      <div className={cn('mb-1.5 text-[0.65rem] font-bold', color)}>
-        {title}
-      </div>
-      <div className="flex flex-col gap-0.5">{children}</div>
-    </div>
-  )
-}
-
-function ScoreBar({ label, score }: { label: string; score: number }) {
-  const color =
-    score >= 70 ? 'bg-emerald-500' : score >= 40 ? 'bg-amber-500' : 'bg-red-500'
-  return (
-    <div>
-      <div className="mb-0.5 flex justify-between text-[0.65rem]">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-semibold">{score}</span>
-      </div>
-      <div className="h-1.5 rounded-full bg-muted">
-        <div
-          className={cn('h-full rounded-full', color)}
-          style={{ width: `${Math.min(100, score)}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between border-b border-border/30 py-0.5">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      </DetailSection>
     </div>
   )
 }

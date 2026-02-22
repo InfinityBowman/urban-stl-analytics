@@ -52,13 +52,21 @@ function explorerReducer(
       }
     case 'SET_MAP_STYLE':
       return { ...state, mapStyle: action.style }
-    case 'TOGGLE_COMPARE_MODE':
+    case 'TOGGLE_COMPARE_MODE': {
+      const entering = !state.compareMode
+      // When entering compare mode with a neighborhood selected, pre-fill it as A
+      const prefillA =
+        entering && state.selected?.type === 'neighborhood'
+          ? state.selected.id
+          : null
       return {
         ...state,
-        compareMode: !state.compareMode,
-        compareNeighborhoodA: null,
+        compareMode: entering,
+        compareNeighborhoodA: prefillA,
         compareNeighborhoodB: null,
+        detailPanelOpen: true,
       }
+    }
     case 'SET_COMPARE_NEIGHBORHOOD':
       return {
         ...state,

@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
+import { DetailRow, DetailSection, MetricCard } from './shared'
 
 export function StopDetail({ id }: { id: string }) {
   const data = useData()
 
   const stop = useMemo(
-    () => data.stops?.features.find((f) => f.properties.stop_id === id) ?? null,
+    () =>
+      data.stops?.features.find((f) => f.properties.stop_id === id) ?? null,
     [data.stops, id],
   )
 
@@ -23,50 +25,59 @@ export function StopDetail({ id }: { id: string }) {
   const [lon, lat] = stop.geometry.coordinates as Array<number>
 
   return (
-    <div className="flex flex-col gap-2 text-xs">
+    <div className="flex flex-col gap-3 text-xs">
+      {/* Stop name */}
       <div className="text-base font-bold">
         {stop.properties.stop_name || `Stop ${id}`}
       </div>
 
-      <DetailRow label="Stop ID" value={id} />
-      <DetailRow
-        label="Location"
-        value={`${lat.toFixed(4)}, ${lon.toFixed(4)}`}
-      />
-      <DetailRow label="Daily Trips" value={String(stats?.trip_count ?? 0)} />
-      <DetailRow label="Routes Served" value={String(routeDetails.length)} />
+      {/* Key metrics */}
+      <div className="flex gap-2">
+        <MetricCard
+          label="Daily Trips"
+          value={stats?.trip_count ?? 0}
+          color="text-blue-500"
+        />
+        <MetricCard
+          label="Routes"
+          value={routeDetails.length}
+          subtext="served"
+        />
+      </div>
 
+      {/* Stop info */}
+      <DetailSection title="Stop Info" color="text-blue-400">
+        <DetailRow label="Stop ID" value={id} />
+        <DetailRow
+          label="Location"
+          value={`${lat.toFixed(4)}, ${lon.toFixed(4)}`}
+        />
+      </DetailSection>
+
+      {/* Routes */}
       {routeDetails.length > 0 && (
-        <div className="mt-2 rounded-lg bg-muted p-3">
-          <div className="mb-2 text-xs font-semibold">Routes</div>
-          <div className="flex flex-col gap-1.5">
+        <DetailSection title="Routes" color="text-blue-400">
+          <div className="flex flex-col gap-2 pt-1">
             {routeDetails.map((r) => (
-              <div key={r.route_id} className="flex items-center gap-2">
+              <div key={r.route_id} className="flex items-center gap-2.5">
                 <span
-                  className="flex h-5 w-8 items-center justify-center rounded text-[0.6rem] font-bold text-white"
+                  className="flex h-5 min-w-[2rem] items-center justify-center rounded text-[0.6rem] font-bold text-white"
                   style={{
-                    background: r.route_color ? `#${r.route_color}` : '#a78bfa',
+                    background: r.route_color
+                      ? `#${r.route_color}`
+                      : '#a78bfa',
                   }}
                 >
                   {r.route_short_name || r.route_id}
                 </span>
-                <span className="text-[0.65rem] text-muted-foreground">
+                <span className="text-[0.65rem] leading-tight text-muted-foreground">
                   {r.route_long_name}
                 </span>
               </div>
             ))}
           </div>
-        </div>
+        </DetailSection>
       )}
-    </div>
-  )
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between border-b border-border/50 py-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
     </div>
   )
 }
