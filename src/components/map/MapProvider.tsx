@@ -15,6 +15,7 @@ interface MapProviderProps {
   interactive?: boolean
   zoom?: number
   center?: { longitude: number; latitude: number }
+  mapStyle?: string
   onMapLoad?: (map: mapboxgl.Map) => void
 }
 
@@ -24,6 +25,7 @@ export function MapProvider({
   interactive = true,
   zoom = STL_ZOOM,
   center = STL_CENTER,
+  mapStyle = 'mapbox://styles/mapbox/streets-v12',
   onMapLoad,
 }: MapProviderProps) {
   const mapRef = useRef<MapRef>(null)
@@ -44,7 +46,7 @@ export function MapProvider({
           zoom,
         }}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle={mapStyle}
         interactive={interactive}
         onLoad={handleLoad}
         attributionControl={false}

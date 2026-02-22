@@ -50,6 +50,8 @@ function explorerReducer(
         ...state,
         analyticsPanelHeight: Math.min(800, Math.max(150, action.height)),
       }
+    case 'SET_MAP_STYLE':
+      return { ...state, mapStyle: action.style }
     default:
       return state
   }

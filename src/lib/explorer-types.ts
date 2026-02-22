@@ -54,6 +54,8 @@ export interface SubToggles {
   demographicsMetric: 'population' | 'vacancyRate' | 'popChange'
 }
 
+export type MapStyle = 'light' | 'dark' | 'satellite' | 'streets'
+
 export interface ExplorerState {
   layers: LayerToggles
   subToggles: SubToggles
@@ -61,6 +63,7 @@ export interface ExplorerState {
   detailPanelOpen: boolean
   analyticsPanelExpanded: boolean
   analyticsPanelHeight: number
+  mapStyle: MapStyle
 }
 
 // ── Actions ────────────────────────────────────────────────
@@ -77,6 +80,7 @@ export type ExplorerAction =
   | { type: 'TOGGLE_ANALYTICS' }
   | { type: 'SET_ANALYTICS_HEIGHT'; height: number }
   | { type: 'CLOSE_DETAIL' }
+  | { type: 'SET_MAP_STYLE'; style: MapStyle }
 
 // ── Data Context ───────────────────────────────────────────
 
@@ -132,4 +136,5 @@ export const initialExplorerState: ExplorerState = {
   detailPanelOpen: false,
   analyticsPanelExpanded: false,
   analyticsPanelHeight: 600,
+  mapStyle: 'streets',
 }

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import type { MapStyle } from '@/lib/explorer-types'
 import { useData, useExplorer } from './ExplorerProvider'
 import { NeighborhoodBaseLayer } from './layers/NeighborhoodBaseLayer'
 import { ComplaintsLayer } from './layers/ComplaintsLayer'
@@ -27,6 +28,42 @@ import {
   percentileBreaks,
   vacancyLegendItems,
 } from '@/lib/colors'
+
+const MAP_STYLES: Record<MapStyle, string> = {
+  light: 'mapbox://styles/mapbox/light-v11',
+  dark: 'mapbox://styles/mapbox/dark-v11',
+  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  streets: 'mapbox://styles/mapbox/streets-v12',
+}
+
+const STYLE_LABELS: Record<MapStyle, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  satellite: 'Satellite',
+  streets: 'Streets',
+}
+
+function MapStyleToggle() {
+  const { state, dispatch } = useExplorer()
+
+  return (
+    <div className="absolute top-2.5 left-2.5 z-10 flex gap-0.5 rounded-md border border-border/60 bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+      {(Object.keys(MAP_STYLES) as MapStyle[]).map((style) => (
+        <button
+          key={style}
+          onClick={() => dispatch({ type: 'SET_MAP_STYLE', style })}
+          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+            state.mapStyle === style
+              ? 'bg-foreground text-background'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {STYLE_LABELS[style]}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export function ExplorerMap() {
   const { state, dispatch } = useExplorer()
@@ -177,7 +214,8 @@ export function ExplorerMap() {
     state.layers.transit
 
   return (
-    <MapProvider className="h-full w-full" onMapLoad={handleMapLoad}>
+    <MapProvider className="h-full w-full" mapStyle={MAP_STYLES[state.mapStyle]} onMapLoad={handleMapLoad}>
+      <MapStyleToggle />
       {data.neighborhoods && <NeighborhoodBaseLayer />}
       {state.layers.complaints && <ComplaintsLayer />}
       {state.layers.crime && <CrimeLayer />}
