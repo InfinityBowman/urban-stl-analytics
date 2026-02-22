@@ -124,9 +124,9 @@ export function ExplorerMap() {
       }
 
       // 1. Check vacancy markers first (most specific points)
-      const vacancyFeatures = map
-        .queryRenderedFeatures(point, { layers: ['vacancy-circles'] })
-        .filter(Boolean)
+      const vacancyFeatures = map.getLayer('vacancy-circles')
+        ? map.queryRenderedFeatures(point, { layers: ['vacancy-circles'] })
+        : []
       if (vacancyFeatures.length > 0) {
         const id = vacancyFeatures[0].properties?.id
         if (id != null) {
@@ -139,9 +139,9 @@ export function ExplorerMap() {
       }
 
       // 2. Transit stops
-      const stopFeatures = map
-        .queryRenderedFeatures(point, { layers: ['stops-circles'] })
-        .filter(Boolean)
+      const stopFeatures = map.getLayer('stops-circles')
+        ? map.queryRenderedFeatures(point, { layers: ['stops-circles'] })
+        : []
       if (stopFeatures.length > 0) {
         const id = stopFeatures[0].properties?.stop_id
         if (id) {
@@ -154,9 +154,9 @@ export function ExplorerMap() {
       }
 
       // 3. Grocery stores
-      const groceryFeatures = map
-        .queryRenderedFeatures(point, { layers: ['grocery-circles'] })
-        .filter(Boolean)
+      const groceryFeatures = map.getLayer('grocery-circles')
+        ? map.queryRenderedFeatures(point, { layers: ['grocery-circles'] })
+        : []
       if (groceryFeatures.length > 0) {
         const idx = groceryFeatures[0].properties?.idx
         if (idx != null) {
@@ -169,9 +169,9 @@ export function ExplorerMap() {
       }
 
       // 4. Food desert tracts
-      const desertFeatures = map
-        .queryRenderedFeatures(point, { layers: ['desert-fill'] })
-        .filter(Boolean)
+      const desertFeatures = map.getLayer('desert-fill')
+        ? map.queryRenderedFeatures(point, { layers: ['desert-fill'] })
+        : []
       if (desertFeatures.length > 0) {
         const tractId = desertFeatures[0].properties?.tract_id
         if (tractId) {
@@ -184,9 +184,9 @@ export function ExplorerMap() {
       }
 
       // 5. Neighborhood polygons (also catches crime/demographics choropleth clicks)
-      const hoodFeatures = map
-        .queryRenderedFeatures(point, { layers: ['neighborhood-base-fill'] })
-        .filter(Boolean)
+      const hoodFeatures = map.getLayer('neighborhood-base-fill')
+        ? map.queryRenderedFeatures(point, { layers: ['neighborhood-base-fill'] })
+        : []
       if (hoodFeatures.length > 0) {
         const nhdNum = hoodFeatures[0].properties?.NHD_NUM
         if (nhdNum != null) {
@@ -215,8 +215,10 @@ export function ExplorerMap() {
     ]
 
     map.on('mousemove', (e) => {
+      const activeLayers = interactiveLayers.filter((l) => map.getLayer(l))
+      if (activeLayers.length === 0) return
       const features = map.queryRenderedFeatures(e.point, {
-        layers: interactiveLayers,
+        layers: activeLayers,
       })
       map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
     })

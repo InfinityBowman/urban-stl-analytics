@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { commandBarEvents } from '@/lib/ai/command-bar-events'
 
 export function Nav() {
@@ -30,6 +32,22 @@ export function Nav() {
           >
             About
           </Link>
+          <button
+            onClick={() => commandBarEvents.emit()}
+            className="ml-1 flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Search01Icon} size={14} strokeWidth={2} />
+            <span className="max-sm:hidden">Ask AI</span>
+            <kbd
+              className="rounded border border-border/60 bg-muted/60 px-1 py-px text-[0.55rem] leading-none max-sm:hidden"
+              suppressHydrationWarning
+            >
+              {typeof navigator !== 'undefined' &&
+              /Mac|iPhone/.test(navigator.userAgent)
+                ? '\u2318K'
+                : 'Ctrl+K'}
+            </kbd>
+          </button>
         </nav>
       </div>
     </header>

@@ -29,7 +29,7 @@ export const Route = createFileRoute('/api/chat')({
         const { messages, context } = body
 
         const openRouterBody = {
-          model: 'glm-4-plus',
+          model: 'arcee-ai/trinity-large-preview:free',
           stream: true,
           messages: [{ role: 'system', content: context }, ...messages],
           tools: TOOL_DEFINITIONS,
@@ -52,10 +52,22 @@ export const Route = createFileRoute('/api/chat')({
 
         if (!upstreamRes.ok) {
           const errText = await upstreamRes.text()
+          let detail = errText
+          try {
+            const parsed = JSON.parse(errText)
+            detail = parsed.error?.message ?? errText
+          } catch {}
+          const friendlyMessages: Record<number, string> = {
+            401: 'Invalid OpenRouter API key. Check OPENROUTER_API_KEY in .env',
+            402: 'Insufficient OpenRouter credits. Add credits at https://openrouter.ai/credits',
+            429: 'Rate limited by OpenRouter. Try again shortly',
+          }
           return new Response(
             JSON.stringify({
-              error: `OpenRouter error: ${upstreamRes.status}`,
-              detail: errText,
+              error:
+                friendlyMessages[upstreamRes.status] ??
+                `OpenRouter error: ${upstreamRes.status}`,
+              detail,
             }),
             { status: 502, headers: { 'Content-Type': 'application/json' } },
           )

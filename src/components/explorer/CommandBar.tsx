@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
 import { useChartBuilder } from './analytics/chart-builder/useChartBuilder'
 import type { ActionResult } from '@/lib/ai/action-executor'
@@ -8,7 +10,8 @@ import { commandBarEvents } from '@/lib/ai/command-bar-events'
 import { buildKpiSnapshot } from '@/lib/ai/kpi-snapshot'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
 import { useChat } from '@/lib/ai/use-chat'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from 'radix-ui'
 
 const SUGGESTIONS = [
   'Show me crime hotspots',
@@ -104,23 +107,14 @@ export function CommandBar() {
       <DialogContent
         showCloseButton={false}
         className="top-[15%] translate-y-0 sm:max-w-xl"
+        aria-describedby={undefined}
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Ask AI</DialogTitle>
+        </VisuallyHidden.Root>
         {/* Input area */}
         <div className="flex items-center gap-2">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0 text-muted-foreground"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
+          <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
             value={input}
