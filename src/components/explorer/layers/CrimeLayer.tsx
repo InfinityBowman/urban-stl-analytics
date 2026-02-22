@@ -9,10 +9,57 @@ export function CrimeLayer() {
 
   const mode = state.subToggles.crimeMode
   const category = state.subToggles.crimeCategory
+  const timeStart = state.subToggles.timeRangeStart
+  const timeEnd = state.subToggles.timeRangeEnd
+  const timeActive = timeStart !== '' && timeEnd !== ''
+
+  // Filter heatmap points by category and time range
+  const filteredPoints = useMemo(() => {
+    if (!data.crimeData) return []
+    let points = data.crimeData.heatmapPoints
+    if (category !== 'all') {
+      points = points.filter((p) => p[2] === category)
+    }
+    if (timeActive) {
+      points = points.filter((p) => {
+        const d = p[3]
+        return d ? d >= timeStart && d <= timeEnd : false
+      })
+    }
+    return points
+  }, [data.crimeData, category, timeActive, timeStart, timeEnd])
 
   // Choropleth: color neighborhoods by crime count
   const choroplethGeo = useMemo(() => {
     if (!data.neighborhoods || !data.crimeData) return null
+
+    if (timeActive) {
+      // Build name→nhdNum lookup from GeoJSON features
+      const nameToNum: Record<string, string> = {}
+      for (const f of data.neighborhoods.features) {
+        const name = f.properties.NHD_NAME
+        const num = String(f.properties.NHD_NUM).padStart(2, '0')
+        if (name) nameToNum[name] = num
+      }
+      // Count filtered points per NHD_NUM
+      const counts: Record<string, number> = {}
+      for (const p of filteredPoints) {
+        const hood = p[4]
+        if (!hood) continue
+        const num = nameToNum[hood]
+        if (num) counts[num] = (counts[num] ?? 0) + 1
+      }
+      const features = data.neighborhoods.features.map((f) => ({
+        ...f,
+        properties: {
+          ...f.properties,
+          crimeCount: counts[String(f.properties.NHD_NUM).padStart(2, '0')] ?? 0,
+        },
+      }))
+      return { type: 'FeatureCollection' as const, features }
+    }
+
+    // No time filter — use pre-aggregated counts
     const features = data.neighborhoods.features.map((f) => {
       const nhdNum = String(f.properties.NHD_NUM).padStart(2, '0')
       const hood = data.crimeData!.neighborhoods[nhdNum]
@@ -30,24 +77,20 @@ export function CrimeLayer() {
       }
     })
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.crimeData, category])
+  }, [data.neighborhoods, data.crimeData, category, timeActive, filteredPoints])
 
-  // Heatmap: individual incident points
+  // Heatmap GeoJSON from filtered points
   const heatmapGeo = useMemo(() => {
-    if (!data.crimeData) return null
-    let points = data.crimeData.heatmapPoints
-    if (category !== 'all') {
-      points = points.filter((p) => p[2] === category)
-    }
+    if (filteredPoints.length === 0) return null
     return {
       type: 'FeatureCollection' as const,
-      features: points.map((p) => ({
+      features: filteredPoints.map((p) => ({
         type: 'Feature' as const,
         properties: { weight: 0.6 },
         geometry: { type: 'Point' as const, coordinates: [p[1], p[0]] },
       })),
     }
-  }, [data.crimeData, category])
+  }, [filteredPoints])
 
   const breaks = useMemo(() => {
     if (!choroplethGeo) return dynamicBreaks([])

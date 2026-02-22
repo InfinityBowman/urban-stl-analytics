@@ -48,6 +48,8 @@ export interface SubToggles {
   groceryStores: boolean
   crimeMode: 'choropleth' | 'heatmap'
   crimeCategory: string
+  timeRangeStart: string
+  timeRangeEnd: string
   arpaCategory: string
   demographicsMetric: 'population' | 'vacancyRate' | 'popChange'
 }
@@ -121,6 +123,8 @@ export const initialExplorerState: ExplorerState = {
     groceryStores: true,
     crimeMode: 'choropleth',
     crimeCategory: 'all',
+    timeRangeStart: '',
+    timeRangeEnd: '',
     arpaCategory: 'all',
     demographicsMetric: 'population',
   },

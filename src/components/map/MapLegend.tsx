@@ -96,7 +96,7 @@ interface MapLegendProps {
 
 export function MapLegend({ children }: MapLegendProps) {
   return (
-    <div className="absolute right-3 bottom-8 z-10 flex max-h-[60vh] min-w-[155px] max-w-[190px] flex-col gap-2.5 overflow-y-auto rounded-lg border border-border/60 bg-card/95 p-3 text-xs shadow-lg backdrop-blur-sm">
+    <div className="absolute right-3 bottom-3 z-10 flex max-h-[60vh] min-w-[155px] max-w-[190px] flex-col gap-2.5 overflow-y-auto rounded-xl border border-border/60 bg-background/90 p-3 text-xs shadow-lg backdrop-blur-md">
       {children}
     </div>
   )

@@ -10,10 +10,51 @@ export function ComplaintsLayer() {
 
   const mode = state.subToggles.complaintsMode
   const category = state.subToggles.complaintsCategory
+  const timeStart = state.subToggles.timeRangeStart
+  const timeEnd = state.subToggles.timeRangeEnd
+  const timeActive = timeStart !== '' && timeEnd !== ''
 
-  // Choropleth GeoJSON
+  // Filter heatmap points by category and time range
+  const filteredPoints = useMemo(() => {
+    if (!data.csbData) return []
+    let points = data.csbData.heatmapPoints
+    if (category !== 'all') {
+      points = points.filter((p) => p[2] === category)
+    }
+    if (timeActive) {
+      points = points.filter((p) => {
+        const d = p[3]
+        return d ? d >= timeStart && d <= timeEnd : false
+      })
+    }
+    return points
+  }, [data.csbData, category, timeActive, timeStart, timeEnd])
+
+  // Choropleth: color neighborhoods by complaint count
   const choroplethGeo = useMemo(() => {
     if (!data.neighborhoods || !data.csbData) return null
+
+    if (timeActive) {
+      // Count filtered points per NHD_NUM
+      // CSB hood values are numeric ward IDs matching NHD_NUM (e.g. "14", "44")
+      const counts: Record<string, number> = {}
+      for (const p of filteredPoints) {
+        const hood = p[4]
+        if (!hood) continue
+        const num = String(hood).padStart(2, '0')
+        counts[num] = (counts[num] ?? 0) + 1
+      }
+      const features = data.neighborhoods.features.map((f) => ({
+        ...f,
+        properties: {
+          ...f.properties,
+          complaintCount: counts[String(f.properties.NHD_NUM).padStart(2, '0')] ?? 0,
+        },
+      }))
+      return { type: 'FeatureCollection' as const, features }
+    }
+
+    // No time filter — use pre-aggregated counts
     const features = data.neighborhoods.features.map((f) => ({
       ...f,
       properties: {
@@ -26,24 +67,20 @@ export function ComplaintsLayer() {
       },
     }))
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.csbData, category])
+  }, [data.neighborhoods, data.csbData, category, timeActive, filteredPoints])
 
-  // Heatmap GeoJSON
+  // Heatmap GeoJSON from filtered points
   const heatmapGeo = useMemo(() => {
-    if (!data.csbData) return null
-    let points = data.csbData.heatmapPoints
-    if (category !== 'all') {
-      points = points.filter((p) => p[2] === category)
-    }
+    if (filteredPoints.length === 0) return null
     return {
       type: 'FeatureCollection' as const,
-      features: points.map((p) => ({
+      features: filteredPoints.map((p) => ({
         type: 'Feature' as const,
         properties: { weight: 0.6 },
         geometry: { type: 'Point' as const, coordinates: [p[1], p[0]] },
       })),
     }
-  }, [data.csbData, category])
+  }, [filteredPoints])
 
   const breaks = useMemo(() => {
     if (!choroplethGeo) return dynamicBreaks([])

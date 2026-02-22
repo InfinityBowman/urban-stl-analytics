@@ -17,7 +17,7 @@ export interface CSBData {
   monthly: Record<string, number>
   hourly: Record<string, number>
   weekday: Record<string, number>
-  heatmapPoints: Array<[number, number, string]> // [lat, lng, category]
+  heatmapPoints: Array<[number, number, string, string?, string?]> // [lat, lng, category, date?, neighborhood?]
 }
 
 export interface TrendsData {
@@ -163,7 +163,7 @@ export interface CrimeData {
   hourly: Record<string, number>
   weekday: Record<string, number>
   monthly: Record<string, Record<string, number>>
-  heatmapPoints: Array<[number, number, string]> // [lat, lng, category]
+  heatmapPoints: Array<[number, number, string, string?, string?]> // [lat, lng, category, date?, neighborhood?]
 }
 
 // ── ARPA Funds ─────────────────────────────────────────────

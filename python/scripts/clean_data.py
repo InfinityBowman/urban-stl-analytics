@@ -181,7 +181,7 @@ def process_csb() -> None:
         log(f"WARNING: No rows found for year {YEAR}. Using all data instead.")
         year_rows = all_rows
 
-    # Aggregations
+    # Aggregations (year-filtered for analytics)
     categories = Counter()
     daily_counts = Counter()
     hourly = Counter()
@@ -191,7 +191,6 @@ def process_csb() -> None:
         "name": "", "total": 0, "closed": 0, "avgResolutionDays": 0,
         "topCategories": Counter(), "_resolution_days": [],
     })
-    heatmap_points = []
 
     for row in year_rows:
         cat = (row.get(cat_col, "") if cat_col else "").strip() or "Unknown"
@@ -228,7 +227,13 @@ def process_csb() -> None:
                     if days < 365:
                         nb["_resolution_days"].append(days)
 
-        # Heatmap points
+    # Heatmap points — ALL years for time slider scrubbing
+    heatmap_points = []
+    for row in all_rows:
+        cat = (row.get(cat_col, "") if cat_col else "").strip() or "Unknown"
+        date_str = parse_date(row.get(date_col, "")) if date_col else None
+        hood_name = (row.get(hood_col, "") if hood_col else "").strip()
+
         lat, lng = None, None
         if lat_col and lng_col:
             try:
@@ -246,7 +251,8 @@ def process_csb() -> None:
                 pass
         if lat is not None and lng is not None:
             if 38.0 < lat < 39.0 and -91.0 < lng < -89.0:
-                heatmap_points.append([lat, lng, cat])
+                heatmap_points.append([lat, lng, cat, date_str or "", hood_name])
+    log(f"Heatmap points (all years): {len(heatmap_points):,}")
 
     # Finalize neighborhoods
     final_hoods = {}
@@ -275,7 +281,7 @@ def process_csb() -> None:
         "dailyCounts": dict(sorted(daily_counts.items())),
         "hourly": dict(sorted(hourly.items(), key=lambda x: int(x[0]))),
         "weekday": dict(sorted(weekday.items(), key=lambda x: int(x[0]))),
-        "heatmapPoints": heatmap_points[:50000],
+        "heatmapPoints": heatmap_points[::max(1, len(heatmap_points) // 50000)][:50000],
         "monthly": monthly_out,
     }
 
@@ -740,7 +746,7 @@ def process_crime() -> None:
     def parse_date(s: str) -> str | None:
         if not s:
             return None
-        for fmt in ("%m/%d/%Y %H:%M", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        for fmt in ("%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y %H:%M", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
             try:
                 return datetime.strptime(s.strip(), fmt).strftime("%Y-%m-%d")
             except ValueError:
@@ -750,7 +756,7 @@ def process_crime() -> None:
     def parse_datetime(s: str) -> datetime | None:
         if not s:
             return None
-        for fmt in ("%m/%d/%Y %H:%M", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        for fmt in ("%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y %H:%M", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
             try:
                 return datetime.strptime(s.strip(), fmt)
             except ValueError:
@@ -844,7 +850,7 @@ def process_crime() -> None:
                 pass
         if lat is not None and lng is not None:
             if 38.0 < lat < 39.0 and -91.0 < lng < -89.0:
-                heatmap_points.append([lat, lng, offense])
+                heatmap_points.append([lat, lng, offense, date_str or "", hood_name])
 
     # Finalize neighborhoods — key by zero-padded NHD_NUM
     final_hoods = {}

@@ -7,6 +7,7 @@ import { VacancyLayer } from './layers/VacancyLayer'
 import { FoodAccessLayer } from './layers/FoodAccessLayer'
 import { CrimeLayer } from './layers/CrimeLayer'
 import { DemographicsLayer } from './layers/DemographicsLayer'
+import { TimeRangeSlider } from './TimeRangeSlider'
 import { MapProvider } from '@/components/map/MapProvider'
 import {
   MapLegend,
@@ -246,6 +247,7 @@ export function ExplorerMap() {
           )}
         </MapLegend>
       )}
+      <TimeRangeSlider />
     </MapProvider>
   )
 }
