@@ -15,9 +15,10 @@ export function VacancyLayer() {
       vacancyTypeFilter,
       vacancyHoodFilter,
       vacancyMinScore,
+      vacancyMaxScore,
     } = state.subToggles
     return data.vacancyData.filter((p) => {
-      if (p.triageScore < vacancyMinScore) return false
+      if (p.triageScore < vacancyMinScore || p.triageScore > vacancyMaxScore) return false
       if (vacancyUseFilter !== 'all' && p.bestUse !== vacancyUseFilter)
         return false
       if (vacancyOwnerFilter === 'lra' && p.owner !== 'LRA') return false
@@ -33,9 +34,10 @@ export function VacancyLayer() {
     })
   }, [data.vacancyData, state.subToggles])
 
+  // Compute breaks from ALL data so colors stay stable when filtering
   const breaks = useMemo(
-    () => percentileBreaks(filtered.map((p) => p.triageScore)),
-    [filtered],
+    () => percentileBreaks((data.vacancyData ?? []).map((p) => p.triageScore)),
+    [data.vacancyData],
   )
 
   const markersGeo = useMemo(

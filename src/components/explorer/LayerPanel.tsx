@@ -10,6 +10,7 @@ import {
   DollarCircleIcon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
+import { Slider } from '@/components/ui/slider'
 import type { LayerToggles, SubToggles } from '@/lib/explorer-types'
 import { cn } from '@/lib/utils'
 
@@ -600,29 +601,25 @@ function VacancyFilters() {
           </option>
         ))}
       </select>
-      {/* Score slider */}
+      {/* Score range slider */}
       <div className="flex flex-col gap-1 pt-0.5">
         <div className="flex items-center justify-between">
           <span className="text-[0.62rem] font-medium text-foreground/60">
-            Min Score
+            Score Range
           </span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[0.62rem] font-bold tabular-nums text-foreground">
-            {state.subToggles.vacancyMinScore}
+            {state.subToggles.vacancyMinScore}–{state.subToggles.vacancyMaxScore}
           </span>
         </div>
-        <input
-          type="range"
+        <Slider
           min={0}
           max={100}
-          value={state.subToggles.vacancyMinScore}
-          onChange={(e) =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'vacancyMinScore',
-              value: +e.target.value,
-            })
-          }
-          className="layer-range-slider w-full"
+          step={1}
+          value={[state.subToggles.vacancyMinScore, state.subToggles.vacancyMaxScore]}
+          onValueChange={(values) => {
+            dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyMinScore', value: values[0] })
+            dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyMaxScore', value: values[1] })
+          }}
         />
       </div>
     </>

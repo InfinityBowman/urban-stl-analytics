@@ -44,6 +44,7 @@ export interface SubToggles {
   vacancyTypeFilter: string
   vacancyHoodFilter: string
   vacancyMinScore: number
+  vacancyMaxScore: number
   foodDesertTracts: boolean
   groceryStores: boolean
   crimeMode: 'choropleth' | 'heatmap'
@@ -123,6 +124,7 @@ export const initialExplorerState: ExplorerState = {
     vacancyTypeFilter: 'all',
     vacancyHoodFilter: 'all',
     vacancyMinScore: 0,
+    vacancyMaxScore: 100,
     foodDesertTracts: true,
     groceryStores: true,
     crimeMode: 'choropleth',
