@@ -63,6 +63,22 @@ export function AnalyticsPanel() {
     }
   }, [tabs, activeTab])
 
+  // Sync from external state (e.g. AI configure_chart)
+  useEffect(() => {
+    if (state.analyticsTab) {
+      setActiveTab(state.analyticsTab)
+      // Animate open if the panel just expanded programmatically
+      if (state.analyticsPanelExpanded) {
+        animate(clipHeight, state.analyticsPanelHeight, {
+          type: 'tween',
+          duration: 0.25,
+          ease: 'easeOut',
+        })
+      }
+      dispatch({ type: 'SET_ANALYTICS_TAB', tab: '' })
+    }
+  }, [state.analyticsTab, state.analyticsPanelExpanded, state.analyticsPanelHeight, dispatch, clipHeight])
+
   // Load data when a tab is selected (regardless of layer toggle)
   const handleTabClick = useCallback(
     (tabKey: string) => {

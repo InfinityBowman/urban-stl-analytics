@@ -70,16 +70,20 @@ export function useChat() {
 
         const decoder = new TextDecoder()
         let buffer = ''
+        let currentEvent = ''
 
         for (;;) {
           const { done, value } = await reader.read()
           if (done) break
 
           buffer += decoder.decode(value, { stream: true })
+          // Flush any remaining bytes held by the TextDecoder
+          const remaining = decoder.decode()
+          if (remaining) buffer += remaining
+
           const lines = buffer.split('\n')
           buffer = lines.pop() ?? ''
 
-          let currentEvent = ''
           for (const line of lines) {
             if (line.startsWith('event: ')) {
               currentEvent = line.slice(7).trim()
@@ -140,6 +144,8 @@ export function useChat() {
               } catch {
                 // Skip malformed JSON
               }
+            } else if (line === '') {
+              // SSE event boundary — reset event type
               currentEvent = ''
             }
           }

@@ -46,7 +46,7 @@ export function buildKpiSnapshot(state: ExplorerState, data: ExplorerData): stri
   }
 
   // Vacancy
-  if (data.vacancyData) {
+  if (data.vacancyData && data.vacancyData.length > 0) {
     const vac = data.vacancyData
     const byOwner: Record<string, number> = {}
     for (const p of vac) byOwner[p.owner] = (byOwner[p.owner] ?? 0) + 1
@@ -82,18 +82,19 @@ export function buildKpiSnapshot(state: ExplorerState, data: ExplorerData): stri
   }
 
   // Demographics
-  if (data.demographicsData) {
-    const totalPop = Object.values(data.demographicsData).reduce(
+  if (data.demographicsData && Object.keys(data.demographicsData).length > 0) {
+    const demoValues = Object.values(data.demographicsData)
+    const totalPop = demoValues.reduce(
       (s, d) => s + (d.population['2020'] ?? 0),
       0,
     )
     const avgVacancy =
       Math.round(
-        (Object.values(data.demographicsData).reduce(
+        (demoValues.reduce(
           (s, d) => s + d.housing.vacancyRate,
           0,
         ) /
-          Object.keys(data.demographicsData).length) *
+          demoValues.length) *
           10,
       ) / 10
     lines.push(

@@ -8,7 +8,6 @@ import {
 import { useData, useExplorer } from './ExplorerProvider'
 import { useChartBuilder } from './analytics/chart-builder/useChartBuilder'
 import type { ActionResult } from '@/lib/ai/action-executor'
-import type { ToolCall } from '@/lib/ai/use-chat'
 import { executeToolCall } from '@/lib/ai/action-executor'
 import { commandBarEvents } from '@/lib/ai/command-bar-events'
 import { buildKpiSnapshot } from '@/lib/ai/kpi-snapshot'
@@ -80,10 +79,20 @@ export function CommandBar() {
   useEffect(() => {
     if (toolCalls.length === 0) return
     const results: Array<ActionResult> = []
+    // Track toggled layers to prevent double-toggle when multiple tool calls
+    // try to enable the same layer (state snapshot is stale within this batch)
+    const toggledLayers = new Set<string>()
+    const guardedDispatch: typeof dispatch = (action) => {
+      if (action.type === 'TOGGLE_LAYER') {
+        if (toggledLayers.has(action.layer)) return
+        toggledLayers.add(action.layer)
+      }
+      dispatch(action)
+    }
     for (const tc of toolCalls) {
       const result = executeToolCall(tc, {
         state: stateRef.current,
-        dispatch,
+        dispatch: guardedDispatch,
         chartDispatch,
         data: dataRef.current,
       })

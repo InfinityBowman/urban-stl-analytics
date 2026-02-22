@@ -117,6 +117,9 @@ export const Route = createFileRoute('/api/chat')({
                 if (done) break
 
                 buffer += decoder.decode(value, { stream: true })
+                // Flush any remaining bytes held by the TextDecoder
+                const flushed = decoder.decode()
+                if (flushed) buffer += flushed
                 const lines = buffer.split('\n')
                 buffer = lines.pop() ?? ''
 
