@@ -215,6 +215,9 @@ export function executeToolCall(
         dispatch({ type: 'TOGGLE_ANALYTICS' })
       }
 
+      // Switch to the chart builder tab
+      dispatch({ type: 'SET_ANALYTICS_TAB', tab: 'chart' })
+
       const fields = getDatasetFields(def, data)
       chartDispatch({ type: 'SET_DATASET', datasetKey, fields, def })
 

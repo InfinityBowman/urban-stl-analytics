@@ -55,8 +55,6 @@ export interface SubToggles {
   timeRangeEnd: string
   arpaCategory: string
   demographicsMetric: 'population' | 'vacancyRate' | 'popChange'
-  forecastMode: boolean
-  forecastYear: number
 }
 
 export type MapStyle = 'light' | 'dark' | 'satellite' | 'streets'
@@ -68,6 +66,7 @@ export interface ExplorerState {
   detailPanelOpen: boolean
   analyticsPanelExpanded: boolean
   analyticsPanelHeight: number
+  analyticsTab: string | null
   mapStyle: MapStyle
   compareMode: boolean
   compareNeighborhoodA: string | null
@@ -92,6 +91,7 @@ export type ExplorerAction =
   | { type: 'TOGGLE_ANALYTICS' }
   | { type: 'SET_ANALYTICS_HEIGHT'; height: number }
   | { type: 'CLOSE_DETAIL' }
+  | { type: 'SET_ANALYTICS_TAB'; tab: string }
   | { type: 'SET_MAP_STYLE'; style: MapStyle }
   | { type: 'TOGGLE_COMPARE_MODE' }
   | { type: 'SET_COMPARE_NEIGHBORHOOD'; slot: 'A' | 'B'; id: string }
@@ -152,13 +152,12 @@ export const initialExplorerState: ExplorerState = {
     timeRangeEnd: '',
     arpaCategory: 'all',
     demographicsMetric: 'population',
-    forecastMode: false,
-    forecastYear: 2026,
   },
   selected: null,
   detailPanelOpen: false,
   analyticsPanelExpanded: false,
   analyticsPanelHeight: 600,
+  analyticsTab: null,
   mapStyle: 'streets',
   compareMode: false,
   compareNeighborhoodA: null,

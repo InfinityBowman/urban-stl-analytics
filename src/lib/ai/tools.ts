@@ -171,4 +171,127 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
       },
     },
   },
+
+  // ── Data Retrieval Tools (resolved client-side, not UI actions) ──
+
+  {
+    type: 'function',
+    function: {
+      name: 'get_city_summary',
+      description:
+        'Get high-level stats across all loaded datasets (complaints total, crime total, vacancy count, transit routes/stops, ARPA spending, demographics, food access). Call this first when answering general questions about the city.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_neighborhood_detail',
+      description:
+        'Get a deep dive on one neighborhood: complaints, crime, vacancy, transit access, food access, demographics, and composite equity score.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Neighborhood name (e.g. "Dutchtown", "Downtown", "The Ville")',
+          },
+        },
+        required: ['name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_rankings',
+      description:
+        'Rank neighborhoods by a metric. Returns top/bottom neighborhoods with values.',
+      parameters: {
+        type: 'object',
+        properties: {
+          metric: {
+            type: 'string',
+            enum: ['complaints', 'crime', 'vacancy', 'population', 'vacancyRate', 'popChange'],
+            description: 'Metric to rank by',
+          },
+          order: {
+            type: 'string',
+            enum: ['desc', 'asc'],
+            description: 'Sort order (default: desc = highest first)',
+          },
+          limit: {
+            type: 'number',
+            description: 'Number of results (default: 10, max: 20)',
+          },
+        },
+        required: ['metric'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_category_breakdown',
+      description:
+        'Get complaints or crime broken down by category, optionally filtered to a single neighborhood.',
+      parameters: {
+        type: 'object',
+        properties: {
+          dataset: {
+            type: 'string',
+            enum: ['complaints', 'crime'],
+            description: 'Which dataset to break down',
+          },
+          neighborhood: {
+            type: 'string',
+            description: 'Optional neighborhood name to filter to',
+          },
+        },
+        required: ['dataset'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_arpa_data',
+      description:
+        'Get ARPA spending summary: total spent, project count, top vendors, and category breakdown. Optionally filter by category.',
+      parameters: {
+        type: 'object',
+        properties: {
+          category: {
+            type: 'string',
+            description: 'Optional category to filter by (e.g. "Public Health")',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_food_access',
+      description:
+        'Get food desert census tracts and grocery store locations. Returns tract count, LILA tract count, grocery store count, and details.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
 ]
+
+/** Names of tools that retrieve data (resolved client-side) vs UI tools (dispatched to dashboard) */
+export const DATA_TOOL_NAMES = new Set([
+  'get_city_summary',
+  'get_neighborhood_detail',
+  'get_rankings',
+  'get_category_breakdown',
+  'get_arpa_data',
+  'get_food_access',
+])

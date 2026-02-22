@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useData, useExplorer } from '../ExplorerProvider'
 import { CRIME_COLORS, dynamicBreaks } from '@/lib/colors'
+import { buildHeatmapGeo } from '@/lib/analysis'
 
 export function CrimeLayer() {
   const { state } = useExplorer()
@@ -34,20 +35,13 @@ export function CrimeLayer() {
     if (!data.neighborhoods || !data.crimeData) return null
 
     if (timeActive) {
-      // Build name→nhdNum lookup from GeoJSON features
-      const nameToNum: Record<string, string> = {}
-      for (const f of data.neighborhoods.features) {
-        const name = f.properties.NHD_NAME
-        const num = String(f.properties.NHD_NUM).padStart(2, '0')
-        if (name) nameToNum[name] = num
-      }
-      // Count filtered points per NHD_NUM
+      // Count filtered points per NHD_NUM (heatmap stores zero-padded NHD_NUM)
       const counts: Record<string, number> = {}
       for (const p of filteredPoints) {
         const hood = p[4]
         if (!hood) continue
-        const num = nameToNum[hood]
-        if (num) counts[num] = (counts[num] ?? 0) + 1
+        const num = String(hood).padStart(2, '0')
+        counts[num] = (counts[num] ?? 0) + 1
       }
       const features = data.neighborhoods.features.map((f) => ({
         ...f,
@@ -79,18 +73,7 @@ export function CrimeLayer() {
     return { type: 'FeatureCollection' as const, features }
   }, [data.neighborhoods, data.crimeData, category, timeActive, filteredPoints])
 
-  // Heatmap GeoJSON from filtered points
-  const heatmapGeo = useMemo(() => {
-    if (filteredPoints.length === 0) return null
-    return {
-      type: 'FeatureCollection' as const,
-      features: filteredPoints.map((p) => ({
-        type: 'Feature' as const,
-        properties: { weight: 0.6 },
-        geometry: { type: 'Point' as const, coordinates: [p[1], p[0]] },
-      })),
-    }
-  }, [filteredPoints])
+  const heatmapGeo = useMemo(() => buildHeatmapGeo(filteredPoints), [filteredPoints])
 
   const breaks = useMemo(() => {
     if (!choroplethGeo) return dynamicBreaks([])

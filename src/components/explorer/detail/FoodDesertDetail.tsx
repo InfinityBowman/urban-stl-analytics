@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
-import type { FoodDesertProperties } from '@/lib/types'
 import { haversine, polygonCentroid } from '@/lib/equity'
 import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
+import { DetailRow, DetailSection, MetricCard } from './shared'
 
 export function FoodDesertDetail({ id }: { id: string }) {
   const data = useData()
@@ -12,7 +12,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
     if (!data.foodDeserts) return null
     return (
       data.foodDeserts.features.find(
-        (f) => (f.properties).tract_id === id,
+        (f) => f.properties.tract_id === id,
       ) ?? null
     )
   }, [data.foodDeserts, id])
@@ -77,7 +77,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
     return false
   }, [data.stops, data.stopStats, data.groceryStores, centroid])
 
-  // Equity score — matches computeEquityGaps factors
+  // Equity score
   const equityScore = useMemo(() => {
     let score = 0
     score += Math.min(nearbyStopData.count * 10, 30)
@@ -101,42 +101,73 @@ export function FoodDesertDetail({ id }: { id: string }) {
   }
 
   const sev = equitySeverity(equityScore)
-  const scoreClass =
-    sev === 'high'
-      ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-      : sev === 'medium'
-        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+  const sevConfig = {
+    high: {
+      bg: 'bg-red-500/15',
+      text: 'text-red-600 dark:text-red-400',
+      label: 'High Concern',
+    },
+    medium: {
+      bg: 'bg-amber-500/15',
+      text: 'text-amber-600 dark:text-amber-400',
+      label: 'Moderate',
+    },
+    low: {
+      bg: 'bg-emerald-500/15',
+      text: 'text-emerald-600 dark:text-emerald-400',
+      label: 'Adequate',
+    },
+  }
+  const sevStyle = sevConfig[sev]
 
   return (
-    <div className="flex flex-col gap-2 text-xs">
-      <div className="text-base font-bold">{props.name}</div>
-      <span
-        className={cn(
-          'inline-block self-start rounded-full px-2.5 py-0.5 text-[0.6rem] font-bold',
-          props.lila
-            ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'
-            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-        )}
-      >
-        {props.lila ? 'LILA Food Desert' : 'Not LILA'}
-      </span>
+    <div className="flex flex-col gap-3 text-xs">
+      {/* Tract name + LILA badge */}
+      <div>
+        <div className="text-base font-bold">{props.name}</div>
+        <span
+          className={cn(
+            'mt-1 inline-block rounded-full px-2.5 py-0.5 text-[0.6rem] font-bold',
+            props.lila
+              ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+              : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+          )}
+        >
+          {props.lila ? 'LILA Food Desert' : 'Not LILA'}
+        </span>
+      </div>
 
-      <DetailRow label="Tract ID" value={props.tract_id} />
-      <DetailRow
-        label="Population"
-        value={props.pop?.toLocaleString() ?? 'N/A'}
-      />
-      <DetailRow label="Poverty Rate" value={`${props.poverty_rate}%`} />
-      <DetailRow
-        label="Median Income"
-        value={`$${props.median_income?.toLocaleString() ?? 'N/A'}`}
-      />
-      <DetailRow label="No Vehicle" value={`${props.pct_no_vehicle}%`} />
+      {/* Key metrics */}
+      <div className="flex gap-2">
+        <MetricCard
+          label="Equity"
+          value={equityScore}
+          subtext="/100"
+          color={sevStyle.text}
+        />
+        <MetricCard
+          label="Population"
+          value={props.pop?.toLocaleString() ?? '—'}
+        />
+      </div>
 
-      <div className="mt-2 rounded-lg bg-muted p-3">
-        <div className="mb-1.5 text-xs font-semibold">Access Analysis</div>
-        <DetailRow label="Transit Stops (0.5mi)" value={String(nearbyStopData.count)} />
+      {/* Demographics */}
+      <DetailSection title="Demographics" color="text-red-400">
+        <DetailRow label="Tract ID" value={props.tract_id} />
+        <DetailRow label="Poverty Rate" value={`${props.poverty_rate}%`} />
+        <DetailRow
+          label="Median Income"
+          value={`$${props.median_income?.toLocaleString() ?? 'N/A'}`}
+        />
+        <DetailRow label="No Vehicle" value={`${props.pct_no_vehicle}%`} />
+      </DetailSection>
+
+      {/* Access Analysis */}
+      <DetailSection title="Access Analysis" color="text-blue-400">
+        <DetailRow
+          label="Transit Stops (0.5mi)"
+          value={String(nearbyStopData.count)}
+        />
         {nearestGrocery && (
           <>
             <DetailRow label="Nearest Grocery" value={nearestGrocery.name} />
@@ -146,26 +177,27 @@ export function FoodDesertDetail({ id }: { id: string }) {
             />
           </>
         )}
-        <div className="mt-2">
-          <span
-            className={cn(
-              'rounded px-2 py-0.5 text-[0.65rem] font-bold',
-              scoreClass,
-            )}
-          >
-            Equity Score: {equityScore}/100
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
+        <DetailRow
+          label="Transit to Grocery"
+          value={groceryAccessible ? 'Yes' : 'No'}
+        />
+      </DetailSection>
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between border-b border-border/50 py-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      {/* Equity score badge */}
+      <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2.5">
+        <span className="text-[0.65rem] font-semibold text-muted-foreground">
+          Equity Assessment
+        </span>
+        <span
+          className={cn(
+            'rounded-full px-2.5 py-0.5 text-[0.6rem] font-bold',
+            sevStyle.bg,
+            sevStyle.text,
+          )}
+        >
+          {sevStyle.label}
+        </span>
+      </div>
     </div>
   )
 }

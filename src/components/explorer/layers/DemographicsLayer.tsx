@@ -39,7 +39,7 @@ export function DemographicsLayer() {
     if (!choroplethGeo) return dynamicBreaks([])
     const values = choroplethGeo.features
       .map((f) => f.properties.demoValue)
-      .filter((v) => v > 0)
+      .filter((v) => v !== 0)
     return dynamicBreaks(values)
   }, [choroplethGeo])
 
@@ -51,12 +51,6 @@ export function DemographicsLayer() {
   ]
 
   if (!data.demographicsData || !data.neighborhoods) return null
-
-  const titles: Record<string, string> = {
-    population: 'Population (2020)',
-    vacancyRate: 'Vacancy Rate %',
-    popChange: 'Pop Change 2010-20 %',
-  }
 
   return (
     <>

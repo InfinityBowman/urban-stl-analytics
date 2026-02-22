@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
-import type { FoodDesertProperties } from '@/lib/types'
 import { haversine } from '@/lib/equity'
+import { DetailRow, DetailSection, MetricCard } from './shared'
 
 export function GroceryDetail({ id }: { id: number }) {
   const data = useData()
@@ -40,23 +40,28 @@ export function GroceryDetail({ id }: { id: number }) {
   const [lon, lat] = store.geometry.coordinates as Array<number>
 
   return (
-    <div className="flex flex-col gap-2 text-xs">
-      <div className="text-base font-bold">{store.properties.name}</div>
+    <div className="flex flex-col gap-3 text-xs">
+      {/* Store name */}
+      <div>
+        <div className="text-base font-bold">{store.properties.name}</div>
+        {store.properties.chain && (
+          <span className="mt-1 inline-block rounded-full bg-emerald-500/15 px-2 py-0.5 text-[0.6rem] font-semibold text-emerald-600 dark:text-emerald-400">
+            {store.properties.chain}
+          </span>
+        )}
+      </div>
 
-      <DetailRow
-        label="Chain"
-        value={store.properties.chain || 'Independent'}
-      />
-      <DetailRow
-        label="Location"
-        value={`${lat.toFixed(4)}, ${lon.toFixed(4)}`}
-      />
+      {/* Store info */}
+      <DetailSection title="Location" color="text-emerald-400">
+        <DetailRow
+          label="Coordinates"
+          value={`${lat.toFixed(4)}, ${lon.toFixed(4)}`}
+        />
+      </DetailSection>
 
+      {/* Nearest food desert */}
       {nearestDesert && (
-        <div className="mt-2 rounded-lg bg-muted p-3">
-          <div className="mb-1 text-xs font-semibold">
-            Nearest Food Desert Tract
-          </div>
+        <DetailSection title="Nearest Food Desert" color="text-red-400">
           <DetailRow
             label="Tract"
             value={(nearestDesert as { name: string }).name}
@@ -65,17 +70,8 @@ export function GroceryDetail({ id }: { id: number }) {
             label="Distance"
             value={`${(nearestDesert as { dist: number }).dist.toFixed(2)} mi`}
           />
-        </div>
+        </DetailSection>
       )}
-    </div>
-  )
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between border-b border-border/50 py-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
     </div>
   )
 }

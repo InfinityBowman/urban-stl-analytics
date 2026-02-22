@@ -20,7 +20,16 @@ export function getChoroColor(value: number, breaks = CHORO_BREAKS) {
 
 export function dynamicBreaks(values: Array<number>, steps = CHORO_COLORS.length) {
   const max = Math.max(...values, 1)
-  return Array.from({ length: steps }, (_, i) => Math.round(max * (i / steps)))
+  const raw = Array.from({ length: steps }, (_, i) => Math.round(max * (i / steps)))
+  // Mapbox "step" expressions require strictly ascending input values.
+  // When max is small, rounding can produce duplicates — deduplicate and keep
+  // ascending order so the expression is always valid.
+  const unique = [...new Set(raw)].sort((a, b) => a - b)
+  // Pad back to the expected length with ascending values beyond max
+  while (unique.length < steps) {
+    unique.push(unique[unique.length - 1] + 1)
+  }
+  return unique
 }
 
 // Category chart colors

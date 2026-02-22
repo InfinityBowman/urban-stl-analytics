@@ -1,17 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceDot,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import {
   stLouisPopulationHistory,
   getPopulationStats,
-  type PopulationRecord,
 } from '@/lib/population-history'
 import { cn } from '@/lib/utils'
 
 type TimeRange = 'all' | '1900+' | '1950+' | '1980+' | '2000+'
 
+const ANNOTATIONS = [
+  { year: 1930, label: 'Peak: 821,960' },
+  { year: 1980, label: '-27% decline' },
+  { year: 2024, label: '291,500' },
+]
+
 export function PopulationHistoryChart() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all')
-  const [hoveredYear, setHoveredYear] = useState<PopulationRecord | null>(null)
-  const [showAnnotations, setShowAnnotations] = useState(true)
 
   const stats = useMemo(() => getPopulationStats(), [])
 
@@ -28,42 +41,20 @@ export function PopulationHistoryChart() {
     )
   }, [timeRange])
 
-  const maxPop = useMemo(
-    () => Math.max(...filteredData.map((p) => p.population)),
-    [filteredData],
-  )
-  const minPop = useMemo(
-    () => Math.min(...filteredData.map((p) => p.population)),
-    [filteredData],
-  )
+  const annotationPoints = useMemo(() => {
+    if (timeRange !== 'all') return []
+    return ANNOTATIONS.map((ann) => {
+      const point = filteredData.find((p) => p.year === ann.year)
+      if (!point) return null
+      return { ...ann, population: point.population }
+    }).filter(Boolean) as Array<{ year: number; label: string; population: number }>
+  }, [filteredData, timeRange])
 
-  const chartWidth = 100
-  const chartHeight = 200
-
-  const getPathD = () => {
-    if (filteredData.length < 2) return ''
-    return filteredData
-      .map((p, i) => {
-        const x = (i / (filteredData.length - 1)) * chartWidth
-        const y =
-          chartHeight -
-          ((p.population - minPop) / (maxPop - minPop)) * chartHeight
-        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-      })
-      .join(' ')
-  }
-
-  const getAreaD = () => {
-    const pathD = getPathD()
-    if (!pathD) return ''
-    return `${pathD} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`
-  }
-
-  const annotations = [
-    { year: 1930, label: 'Peak: 821,960', y: 10 },
-    { year: 1980, label: '-27% decline', y: 60 },
-    { year: 2024, label: '291,500', y: 90 },
-  ]
+  const formatPopulation = useCallback((v: number) => {
+    if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`
+    if (v >= 1000) return `${(v / 1000).toFixed(0)}k`
+    return String(v)
+  }, [])
 
   return (
     <div className="rounded-xl border border-border/60 bg-card p-4">
@@ -81,10 +72,10 @@ export function PopulationHistoryChart() {
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={cn(
-                  'rounded px-2 py-0.5 text-[0.6rem] font-medium transition-colors',
+                  'shrink-0 rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors',
                   timeRange === range
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
                 )}
               >
                 {range === 'all' ? 'All' : range}
@@ -94,183 +85,108 @@ export function PopulationHistoryChart() {
         </div>
       </div>
 
-      <div className="relative" onMouseLeave={() => setHoveredYear(null)}>
-        <svg
-          viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`}
-          className="w-full h-56"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="popGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="0%"
-                stopColor="rgb(99, 102, 241)"
-                stopOpacity="0.4"
-              />
-              <stop
-                offset="100%"
-                stopColor="rgb(99, 102, 241)"
-                stopOpacity="0.05"
-              />
-            </linearGradient>
-          </defs>
-
-          <path d={getAreaD()} fill="url(#popGradient)" />
-          <path
-            d={getPathD()}
-            fill="none"
-            stroke="rgb(99, 102, 241)"
-            strokeWidth="0.5"
-          />
-
-          {showAnnotations &&
-            timeRange === 'all' &&
-            annotations.map((ann) => {
-              const idx = stLouisPopulationHistory.findIndex(
-                (p) => p.year === ann.year,
-              )
-              if (idx === -1) return null
-              const dataPoint = stLouisPopulationHistory[idx]
-              const x =
-                (filteredData.findIndex((p) => p.year === ann.year) /
-                  (filteredData.length - 1)) *
-                chartWidth
-              const y =
-                chartHeight -
-                ((dataPoint.population - minPop) / (maxPop - minPop)) *
-                  chartHeight
-              return (
-                <g key={ann.year}>
-                  <circle cx={x} cy={y} r="1" fill="rgb(99, 102, 241)" />
-                  <text
-                    x={x}
-                    y={ann.y}
-                    textAnchor="middle"
-                    className="fill-muted-foreground"
-                    style={{ fontSize: '3px' }}
-                  >
-                    {ann.label}
-                  </text>
-                </g>
-              )
-            })}
-
-          {filteredData.map((p, i) => {
-            const x = (i / (filteredData.length - 1)) * chartWidth
-            const y =
-              chartHeight -
-              ((p.population - minPop) / (maxPop - minPop)) * chartHeight
-            return (
-              <circle
-                key={p.year}
-                cx={x}
-                cy={y}
-                r={hoveredYear?.year === p.year ? 1.5 : 0}
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={filteredData}>
+            <defs>
+              <linearGradient id="popGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgb(99, 102, 241)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="rgb(99, 102, 241)" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+            <XAxis
+              dataKey="year"
+              stroke="var(--color-muted-foreground)"
+              fontSize={11}
+              interval="preserveStartEnd"
+              minTickGap={40}
+            />
+            <YAxis
+              stroke="var(--color-muted-foreground)"
+              fontSize={11}
+              tickFormatter={formatPopulation}
+              width={45}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--color-card)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                fontSize: 12,
+                color: 'var(--color-foreground)',
+              }}
+              labelStyle={{ color: 'var(--color-foreground)', fontWeight: 700 }}
+              formatter={(v: number) => [v.toLocaleString(), 'Population']}
+              labelFormatter={(year) => String(year)}
+            />
+            <Area
+              type="monotone"
+              dataKey="population"
+              stroke="rgb(99, 102, 241)"
+              strokeWidth={2}
+              fill="url(#popGradient)"
+              dot={false}
+              activeDot={{ r: 4, fill: 'rgb(99, 102, 241)', strokeWidth: 0 }}
+            />
+            {annotationPoints.map((ann) => (
+              <ReferenceDot
+                key={ann.year}
+                x={ann.year}
+                y={ann.population}
+                r={4}
                 fill="rgb(99, 102, 241)"
-                className="transition-all"
+                stroke="var(--color-card)"
+                strokeWidth={2}
+                label={{
+                  value: ann.label,
+                  position: 'top',
+                  fontSize: 11,
+                  fill: 'var(--color-muted-foreground)',
+                  fontWeight: 600,
+                  offset: 8,
+                }}
               />
-            )
-          })}
-        </svg>
-
-        <div
-          className="absolute inset-0"
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect()
-            const x = (e.clientX - rect.left) / rect.width
-            const idx = Math.round(x * (filteredData.length - 1))
-            if (idx >= 0 && idx < filteredData.length) {
-              setHoveredYear(filteredData[idx])
-            }
-          }}
-        />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
-
-      {hoveredYear && (
-        <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold">{hoveredYear.year}</span>
-            <span className="text-lg font-extrabold text-primary">
-              {hoveredYear.population.toLocaleString()}
-            </span>
-          </div>
-          {hoveredYear.change && (
-            <div className="mt-1 flex items-center justify-between text-[0.65rem]">
-              <span className="text-muted-foreground">
-                {hoveredYear.change > 0 ? 'Increase' : 'Decline'}
-              </span>
-              <span
-                className={cn(
-                  'font-semibold',
-                  hoveredYear.change > 0 ? 'text-emerald-500' : 'text-red-500',
-                )}
-              >
-                {hoveredYear.change > 0 ? '+' : ''}
-                {hoveredYear.change.toLocaleString()} (
-                {hoveredYear.changePercent?.toFixed(1)}%)
-              </span>
-            </div>
-          )}
-          {hoveredYear.note && (
-            <div className="mt-1 text-[0.6rem] text-muted-foreground italic">
-              {hoveredYear.note}
-            </div>
-          )}
-          {hoveredYear.rank && (
-            <div className="text-[0.6rem] text-muted-foreground">
-              US City Rank: #{hoveredYear.rank}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="mt-4 grid grid-cols-4 gap-2">
-        <div className="rounded-lg bg-emerald-500/10 p-2 text-center">
-          <div className="text-xs font-bold text-emerald-400">
-            {stats.peak.population.toLocaleString()}
-          </div>
-          <div className="text-[0.5rem] text-muted-foreground">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
             Peak ({stats.peak.year})
           </div>
+          <div className="text-sm font-bold">
+            {stats.peak.population.toLocaleString()}
+          </div>
         </div>
-        <div className="rounded-lg bg-primary/10 p-2 text-center">
-          <div className="text-xs font-bold text-primary">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
+            Current
+          </div>
+          <div className="text-sm font-bold">
             {stats.current.population.toLocaleString()}
           </div>
-          <div className="text-[0.5rem] text-muted-foreground">Current</div>
         </div>
-        <div className="rounded-lg bg-red-500/10 p-2 text-center">
-          <div className="text-xs font-bold text-red-400">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
+            From Peak
+          </div>
+          <div className="text-sm font-bold text-red-400">
             -{stats.declinePercent}%
           </div>
-          <div className="text-[0.5rem] text-muted-foreground">From Peak</div>
         </div>
-        <div className="rounded-lg bg-orange-500/10 p-2 text-center">
-          <div className="text-xs font-bold text-orange-400">
-            {stats.yearsSincePeak}
-          </div>
-          <div className="text-[0.5rem] text-muted-foreground">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
             Years Declining
+          </div>
+          <div className="text-sm font-bold">
+            {stats.yearsSincePeak}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          onClick={() => setShowAnnotations(!showAnnotations)}
-          className={cn(
-            'rounded px-2 py-0.5 text-[0.6rem] font-medium transition-colors',
-            showAnnotations
-              ? 'bg-muted text-foreground'
-              : 'bg-muted/50 text-muted-foreground',
-          )}
-        >
-          Annotations
-        </button>
-        <span className="text-[0.55rem] text-muted-foreground">
-          Hover over chart for details
-        </span>
-      </div>
     </div>
   )
 }
