@@ -27,19 +27,19 @@ export function HousingCard() {
               <div className="flex items-end gap-1">
                 <div className="flex flex-col items-center">
                   <div
-                    className="w-6 rounded-t bg-gradient-to-t from-purple-600 to-purple-400"
+                    className="w-6 rounded-t bg-blue-500"
                     style={{ height: `${(d.luxury / maxUnits) * 80}px` }}
                   />
-                  <span className="mt-0.5 text-[0.5rem] tabular-nums text-purple-400">
+                  <span className="mt-0.5 text-[0.5rem] tabular-nums text-blue-400">
                     {d.luxury}
                   </span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div
-                    className="w-6 rounded-t bg-gradient-to-t from-emerald-600 to-emerald-400"
+                    className="w-6 rounded-t bg-orange-500"
                     style={{ height: `${(d.affordable / maxUnits) * 80}px` }}
                   />
-                  <span className="mt-0.5 text-[0.5rem] tabular-nums text-emerald-400">
+                  <span className="mt-0.5 text-[0.5rem] tabular-nums text-orange-400">
                     {d.affordable}
                   </span>
                 </div>
@@ -51,22 +51,25 @@ export function HousingCard() {
           ))}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-2 rounded-sm bg-purple-500" />
-            <span className="text-[0.55rem] text-muted-foreground">Luxury</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-2 rounded-sm bg-emerald-500" />
-            <span className="text-[0.55rem] text-muted-foreground">
-              Affordable
-            </span>
-          </div>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-2 rounded-sm bg-blue-500" />
+          <span className="text-[0.55rem] text-muted-foreground">Luxury</span>
         </div>
-        <div className="rounded bg-red-500/20 px-2 py-0.5 text-[0.6rem] font-semibold text-red-400">
-          High vs Critical
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-2 rounded-sm bg-orange-500" />
+          <span className="text-[0.55rem] text-muted-foreground">
+            Affordable
+          </span>
         </div>
+      </div>
+      <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2">
+        <div className="text-[0.6rem] font-semibold text-red-400">
+          Critical Shortage: 3+ Bedroom Family Homes
+        </div>
+        <p className="mt-0.5 text-[0.55rem] text-muted-foreground">
+          Only 1,070 family-sized units total — luxury outpaces affordable 1.5:1
+        </p>
       </div>
     </Card>
   )

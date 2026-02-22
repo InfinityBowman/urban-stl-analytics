@@ -19,30 +19,29 @@ type TabView = 'overview' | 'history' | 'migration'
 
 export function PopulationDashboard() {
   const [activeTab, setActiveTab] = useState<TabView>('overview')
-  const stats = getPopulationStats()
 
   return (
     <div className="flex flex-col">
-      <div className="border-b border-border/60 bg-gradient-to-r from-card to-card/50 px-6 py-6">
+      <div className="border-b border-border/60 bg-card px-6 py-5">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
+            <h1 className="text-base font-bold tracking-tight text-foreground">
               STL Population: The Exodus & The Offset
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
               Understanding the drivers of population change in St. Louis
             </p>
           </div>
-          <div className="flex gap-0.5 rounded-lg bg-muted/50 p-0.5">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {(['overview', 'history', 'migration'] as TabView[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors capitalize',
+                  'shrink-0 rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors capitalize',
                   activeTab === tab
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
                 )}
               >
                 {tab}
@@ -58,18 +57,18 @@ export function PopulationDashboard() {
         {activeTab === 'migration' && <MigrationTab />}
       </div>
 
-      <div className="border-t border-border/60 bg-muted/30 px-6 py-4">
+      <div className="border-t border-border/60 px-6 py-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[0.6rem] text-muted-foreground">
             Data sources: US Census Bureau (1790-2024), IRS Migration Data,
             SLPS, SLMPD, Missouri Dept. of Education
           </div>
           <Link
             to="/"
             search={{ highlight: 'outflow' }}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[0.65rem] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle
                 cx="8"
                 cy="8"
@@ -111,8 +110,6 @@ function OverviewTab() {
 }
 
 function HistoryTab() {
-  const stats = getPopulationStats()
-
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-4">
@@ -142,9 +139,9 @@ function QuickStats() {
   const stats = getPopulationStats()
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/90 to-emerald-900/80 px-4 py-4 shadow-lg backdrop-blur-sm">
-      <div className="flex items-center gap-1.5 text-[0.6rem] font-bold uppercase tracking-wider text-emerald-400/80">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <div className="rounded-xl border border-border/60 bg-card p-4">
+      <div className="mb-3 flex items-center gap-1.5">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-emerald-400">
           <path
             d="M8 2L14 8L8 14"
             stroke="currentColor"
@@ -159,40 +156,56 @@ function QuickStats() {
             strokeLinecap="round"
           />
         </svg>
-        International Migration Offset
+        <span className="text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
+          International Migration Offset
+        </span>
       </div>
-      <div className="mt-1 text-2xl font-extrabold tabular-nums text-emerald-400">
-        +{stats.current.year === 2024 ? '4,125' : '3,475'}
-      </div>
-      <div className="text-[0.55rem] text-center text-emerald-400/60">
-        Only factor preventing total population crash
-      </div>
-      <div className="mt-2 rounded bg-red-500/20 px-2 py-1 text-[0.6rem] text-red-300">
-        Domestic outflow: -4,850/yr
-      </div>
-      <div className="mt-3 grid w-full grid-cols-2 gap-2 border-t border-emerald-500/20 pt-3">
-        <div className="text-center">
-          <div className="text-lg font-bold text-white">
-            {stats.peak.population.toLocaleString()}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg bg-emerald-500/10 px-2.5 py-2 text-center">
+          <div className="text-lg font-extrabold tabular-nums text-emerald-400">
+            +{stats.current.year === 2024 ? '4,125' : '3,475'}
           </div>
-          <div className="text-[0.5rem] text-emerald-400/60">
+          <div className="text-[0.55rem] text-muted-foreground">
+            Int'l inflow/yr
+          </div>
+        </div>
+        <div className="rounded-lg bg-red-500/10 px-2.5 py-2 text-center">
+          <div className="text-lg font-extrabold tabular-nums text-red-400">
+            -4,850
+          </div>
+          <div className="text-[0.55rem] text-muted-foreground">
+            Domestic outflow/yr
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
             Peak ({stats.peak.year})
           </div>
+          <div className="text-sm font-bold">
+            {stats.peak.population.toLocaleString()}
+          </div>
         </div>
-        <div className="text-center">
-          <div className="text-lg font-bold text-white">
+        <div className="rounded-lg bg-muted px-2.5 py-1.5">
+          <div className="text-[0.55rem] font-semibold uppercase tracking-wider text-muted-foreground">
+            Current
+          </div>
+          <div className="text-sm font-bold">
             {stats.current.population.toLocaleString()}
           </div>
-          <div className="text-[0.5rem] text-emerald-400/60">Current</div>
         </div>
       </div>
-      <div className="mt-2 w-full rounded bg-white/10 px-2 py-1.5 text-center">
-        <div className="text-sm font-bold text-red-400">
+
+      <div className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-center">
+        <span className="text-sm font-bold text-red-400">
           -{stats.declinePercent}%
-        </div>
-        <div className="text-[0.5rem] text-white/60">
-          Decline from peak ({stats.yearsSincePeak} years)
-        </div>
+        </span>
+        <span className="ml-1.5 text-[0.55rem] text-muted-foreground">
+          decline from peak ({stats.yearsSincePeak} years)
+        </span>
       </div>
     </div>
   )

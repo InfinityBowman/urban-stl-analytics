@@ -10,13 +10,13 @@ interface CardProps {
 }
 
 const accentColors = {
-  blue: 'from-blue-500/20 to-blue-600/5 border-blue-500/20',
-  orange: 'from-orange-500/20 to-orange-600/5 border-orange-500/20',
-  purple: 'from-purple-500/20 to-purple-600/5 border-purple-500/20',
-  red: 'from-red-500/20 to-red-600/5 border-red-500/20',
+  blue: '#4f6ef7',
+  orange: '#f97316',
+  purple: '#a855f7',
+  red: '#ef4444',
 }
 
-const highlightColors = {
+const highlightTextColors = {
   blue: 'text-blue-400',
   orange: 'text-orange-400',
   purple: 'text-purple-400',
@@ -32,9 +32,11 @@ export function Card({
   children,
 }: CardProps) {
   return (
-    <div
-      className={`rounded-xl border bg-gradient-to-br p-4 ${accentColors[accent]}`}
-    >
+    <div className="relative rounded-xl border border-border/60 bg-card p-4">
+      <div
+        className="absolute top-3 bottom-3 left-0 w-[3px] rounded-full"
+        style={{ background: accentColors[accent] }}
+      />
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h3 className="text-sm font-bold text-foreground">{title}</h3>
@@ -45,7 +47,7 @@ export function Card({
         {highlight && (
           <div className="text-right">
             <div
-              className={`text-lg font-extrabold tabular-nums ${highlightColors[accent]}`}
+              className={`text-lg font-extrabold tabular-nums ${highlightTextColors[accent]}`}
             >
               {highlight}
             </div>

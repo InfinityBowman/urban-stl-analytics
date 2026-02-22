@@ -44,7 +44,7 @@ export function DestinationsCard() {
           )
         })}
       </div>
-      <div className="mt-3 rounded-lg bg-orange-500/10 px-3 py-2">
+      <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
         <div className="text-[0.6rem] font-semibold text-orange-400">
           52% move to St. Louis County alone
         </div>

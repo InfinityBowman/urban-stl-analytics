@@ -45,16 +45,16 @@ export function MigrationFlowChart() {
             Annual movement in/out of St. Louis City
           </p>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           {(['net', 'domestic', 'international'] as ViewMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
               className={cn(
-                'rounded px-2 py-0.5 text-[0.6rem] font-medium transition-colors capitalize',
+                'shrink-0 rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-colors capitalize',
                 viewMode === mode
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
               )}
             >
               {mode}
