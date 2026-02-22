@@ -73,6 +73,13 @@ const LAYER_CONFIG: Array<{
     desc: 'Federal relief spending analytics',
     icon: DollarCircleIcon,
   },
+  {
+    key: 'communityVoice',
+    label: 'Community Voice',
+    color: '#ec4899',
+    desc: 'Resident feedback & sentiment',
+    icon: BubbleChatAddIcon,
+  },
 ]
 
 export function LayerPanel() {
@@ -88,10 +95,35 @@ export function LayerPanel() {
           <span className="text-[0.8rem] font-semibold tracking-tight text-foreground">
             Layers
           </span>
+<<<<<<< Updated upstream
           {activeCount > 0 && (
             <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[0.6rem] font-bold tabular-nums text-primary">
               {activeCount}
             </span>
+=======
+          <span
+            className={cn(
+              'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[0.6rem] font-bold tabular-nums text-primary transition-opacity duration-150',
+              activeCount > 0 ? 'opacity-100' : 'opacity-0',
+            )}
+          >
+            {activeCount || 0}
+          </span>
+        </div>
+        <button
+          onClick={() => {
+            for (const key of Object.keys(state.layers) as Array<
+              keyof LayerToggles
+            >) {
+              if (state.layers[key]) {
+                dispatch({ type: 'TOGGLE_LAYER', layer: key })
+              }
+            }
+          }}
+          className={cn(
+            'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
+            activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+>>>>>>> Stashed changes
           )}
         </div>
         {activeCount > 0 && (
@@ -271,6 +303,8 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
       return <DemographicsFilters />
     case 'arpa':
       return <ArpaFilters />
+    case 'communityVoice':
+      return <CommunityVoiceFilters />
   }
 }
 
@@ -746,6 +780,28 @@ function ArpaFilters() {
     <div className="flex items-center gap-1.5 text-[0.62rem] text-foreground/50">
       <div className="h-1 w-1 rounded-full bg-emerald-500/60" />
       Analytics-only layer
+    </div>
+  )
+}
+
+function CommunityVoiceFilters() {
+  return (
+    <div className="flex flex-col gap-1.5 text-[0.62rem]">
+      <div className="flex items-center gap-1.5 text-foreground/50">
+        <div className="h-1 w-1 rounded-full bg-pink-500/60" />
+        Click markers to read resident quotes
+      </div>
+      <div className="flex flex-wrap gap-1 pt-1">
+        <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400">
+          Positive
+        </span>
+        <span className="rounded bg-gray-500/20 px-1.5 py-0.5 text-gray-600 dark:text-gray-400">
+          Neutral
+        </span>
+        <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-red-600 dark:text-red-400">
+          Concern
+        </span>
+      </div>
     </div>
   )
 }
