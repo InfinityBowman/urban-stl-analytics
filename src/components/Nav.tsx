@@ -24,7 +24,7 @@ export function Nav() {
         </Link>
         <button
           onClick={() => commandBarEvents.emit()}
-          className="flex w-64 items-center justify-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+          className="flex w-64 items-center justify-center gap-2 rounded-md border-2 border-transparent bg-clip-padding px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground [background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-lighter),var(--brand),var(--brand-light))_border-box] hover:[background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-light),var(--brand),var(--brand-lighter))_border-box]"
         >
           <HugeiconsIcon icon={Search01Icon} size={14} strokeWidth={2} />
           <span className="max-sm:hidden">Ask AI</span>

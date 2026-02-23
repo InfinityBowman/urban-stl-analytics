@@ -3,7 +3,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
   Delete02Icon,
-  Search01Icon,
   SentIcon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
@@ -138,7 +137,7 @@ export function CommandBar() {
   return (
     <div
       className={cn(
-        'fixed bottom-4 z-50 flex w-[420px] flex-col',
+        'fixed bottom-4 z-50 flex w-105 flex-col',
         'left-[calc(280px+(100vw-280px)/2)] -translate-x-1/2',
         'rounded-xl border border-border/60 bg-card/90 shadow-xl backdrop-blur-xl',
         'animate-in fade-in slide-in-from-bottom-3 duration-200',
@@ -148,12 +147,6 @@ export function CommandBar() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            strokeWidth={2}
-            className="text-muted-foreground"
-          />
           <span className="text-xs font-medium text-muted-foreground">
             Ask AI
           </span>
@@ -235,28 +228,32 @@ export function CommandBar() {
             )}
 
             {/* Follow-up quick actions */}
-            {!isStreaming && messages.length > 0 && messages.at(-1)?.role === 'assistant' && (
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => handleSubmit('Chart this data for me')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  Chart this
-                </button>
-                <button
-                  onClick={() => handleSubmit('Tell me more details')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  Tell me more
-                </button>
-                <button
-                  onClick={() => handleSubmit('Which neighborhoods are most affected?')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  By neighborhood
-                </button>
-              </div>
-            )}
+            {!isStreaming &&
+              messages.length > 0 &&
+              messages.at(-1)?.role === 'assistant' && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleSubmit('Chart this data for me')}
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    Chart this
+                  </button>
+                  <button
+                    onClick={() => handleSubmit('Tell me more details')}
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    Tell me more
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSubmit('Which neighborhoods are most affected?')
+                    }
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    By neighborhood
+                  </button>
+                </div>
+              )}
           </>
         )}
       </div>
@@ -274,7 +271,9 @@ export function CommandBar() {
         />
         {isStreaming ? (
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-[0.6rem] text-muted-foreground/60">thinking...</span>
+            <span className="text-[0.6rem] text-muted-foreground/60">
+              thinking...
+            </span>
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
           </div>
         ) : (
