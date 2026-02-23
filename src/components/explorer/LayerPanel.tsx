@@ -8,7 +8,7 @@ import {
   Store01Icon,
   UserGroupIcon,
   DollarCircleIcon,
-  BubbleChatAddIcon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
 import { Slider } from '@/components/ui/slider'
@@ -73,16 +73,9 @@ const LAYER_CONFIG: Array<{
     desc: 'Federal relief spending analytics',
     icon: DollarCircleIcon,
   },
-  {
-    key: 'communityVoice',
-    label: 'Community Voice',
-    color: '#ec4899',
-    desc: 'Resident feedback & sentiment',
-    icon: BubbleChatAddIcon,
-  },
 ]
 
-export function LayerPanel() {
+export function LayerPanel({ onClose }: { onClose?: () => void } = {}) {
   const { state, dispatch } = useExplorer()
 
   const activeCount = Object.values(state.layers).filter(Boolean).length
@@ -104,23 +97,34 @@ export function LayerPanel() {
             {activeCount || 0}
           </span>
         </div>
-        <button
-          onClick={() => {
-            for (const key of Object.keys(state.layers) as Array<
-              keyof LayerToggles
-            >) {
-              if (state.layers[key]) {
-                dispatch({ type: 'TOGGLE_LAYER', layer: key })
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              for (const key of Object.keys(state.layers) as Array<
+                keyof LayerToggles
+              >) {
+                if (state.layers[key]) {
+                  dispatch({ type: 'TOGGLE_LAYER', layer: key })
+                }
               }
-            }
-          }}
-          className={cn(
-            'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
-            activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+            }}
+            className={cn(
+              'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
+              activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+          >
+            Clear all
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground/55 transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Close"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4" />
+            </button>
           )}
-        >
-          Clear all
-        </button>
+        </div>
       </div>
 
       {/* Layer list */}
@@ -282,8 +286,6 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
       return <DemographicsFilters />
     case 'arpa':
       return <ArpaFilters />
-    case 'communityVoice':
-      return <CommunityVoiceFilters />
   }
 }
 
@@ -763,24 +765,3 @@ function ArpaFilters() {
   )
 }
 
-function CommunityVoiceFilters() {
-  return (
-    <div className="flex flex-col gap-1.5 text-[0.62rem]">
-      <div className="flex items-center gap-1.5 text-foreground/50">
-        <div className="h-1 w-1 rounded-full bg-pink-500/60" />
-        Click markers to read resident quotes
-      </div>
-      <div className="flex flex-wrap gap-1 pt-1">
-        <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400">
-          Positive
-        </span>
-        <span className="rounded bg-gray-500/20 px-1.5 py-0.5 text-gray-600 dark:text-gray-400">
-          Neutral
-        </span>
-        <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-red-600 dark:text-red-400">
-          Concern
-        </span>
-      </div>
-    </div>
-  )
-}

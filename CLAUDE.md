@@ -20,7 +20,7 @@ pnpm data:pipeline  # Full pipeline: sync + fetch + clean
 
 ## Environment
 
-Requires a `.env` file with `VITE_MAPBOX_TOKEN=pk.xxx` (Mapbox public access token). See `.env.example`.
+Requires a `.env` file with `VITE_MAPBOX_TOKEN=pk.xxx` (Mapbox public access token) and optionally `OPENROUTER_API_KEY` for AI command bar. See `.env.example`.
 
 ### Python / uv
 
@@ -42,29 +42,38 @@ This is a St. Louis urban analytics dashboard combining three hackathon prototyp
 
 ### Routing
 
-File-based routing via TanStack Router. Route tree is auto-generated in `src/routeTree.gen.ts` — do not edit manually.
+File-based routing via TanStack Router. Route tree is auto-generated in `src/routeTree.gen.ts` — do not edit manually. Two layout groups: `_bare` (no nav, used for landing) and `_app` (nav shell).
 
-- `/` — Unified Map Explorer (fullscreen map with layer toggles, detail panel, analytics drawer)
+- `/` — Landing page (`_bare` layout)
+- `/explore` — Unified Map Explorer (fullscreen map with layer toggles, detail panel, analytics drawer, AI command bar)
+- `/housing` — Housing Prices (placeholder — needs real data source)
+- `/affected` — Affected Neighborhoods (placeholder — needs real data source)
+- `/population` — Population trends (placeholder — needs real data source)
+- `/about` — About page
+- `/api/chat` — AI chat server endpoint (POST, uses OpenRouter)
 
 ### Data Flow
 
 All data lives in `public/data/` as static JSON/GeoJSON files. `ExplorerProvider` manages all state via `useReducer` and data fetching via `useState` + lazy loading. Base datasets (neighborhoods, routes, grocery stores) load on mount; layer-specific datasets load on toggle. Expensive computations are memoized with `useMemo`.
 
-Key datasets: `csb_latest.json` (311 complaints), `neighborhoods.geojson` (79 boundaries), `stops.geojson`/`shapes.geojson`/`routes.json` (transit GTFS), `food_deserts.geojson`, `grocery_stores.geojson`, `crime.json` (SLMPD crime incidents), `arpa.json` (ARPA fund expenditures), `demographics.json` (census demographics by neighborhood), `vacancies.json` (real vacant building data). Vacancy falls back to mock data (`src/lib/vacancy-data.ts`) if real data is unavailable.
+Key datasets: `csb_latest.json` (311 complaints), `neighborhoods.geojson` (79 boundaries), `stops.geojson`/`shapes.geojson`/`routes.json` (transit GTFS), `food_deserts.geojson`, `grocery_stores.geojson`, `crime.json` (SLMPD crime incidents), `arpa.json` (ARPA fund expenditures), `demographics.json` (census demographics by neighborhood), `vacancies.json` (vacant building data).
 
 The data pipeline is split into two scripts: `python/scripts/fetch_raw.py` downloads raw datasets into `python/data/raw/`, and `python/scripts/clean_data.py` processes them into the JSON/GeoJSON files in `public/data/`.
 
 ### Code Organization
 
-- `src/routes/` — `index.tsx` renders `<MapExplorer />`, `__root.tsx` provides layout shell with Nav
-- `src/components/explorer/` — Core app: `MapExplorer.tsx` (CSS grid layout), `ExplorerProvider.tsx` (state + data), `ExplorerMap.tsx` (Mapbox canvas + click handler), `LayerPanel.tsx` (left rail), `DetailPanel.tsx` (right rail), `AnalyticsPanel.tsx` (bottom drawer)
-- `src/components/explorer/layers/` — Map layers: `NeighborhoodBaseLayer`, `ComplaintsLayer`, `CrimeLayer`, `TransitLayer`, `VacancyLayer`, `FoodAccessLayer`, `DemographicsLayer`
-- `src/components/explorer/detail/` — Entity detail views: `NeighborhoodDetail`, `VacancyDetail`, `StopDetail`, `GroceryDetail`, `FoodDesertDetail`
-- `src/components/explorer/analytics/` — Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `NeighborhoodAnalytics`, `ChartBuilder`
+- `src/routes/` — `_bare/index.tsx` (landing), `_app/explore.tsx` (Map Explorer), `_app/housing.tsx`, `_app/affected.tsx`, `_app/population.tsx`, `_app/about.tsx`, `api/chat.ts` (AI endpoint)
+- `src/components/explorer/` — Core app: `MapExplorer.tsx` (CSS grid layout), `ExplorerProvider.tsx` (state + data), `ExplorerMap.tsx` (Mapbox canvas + click handler), `LayerPanel.tsx` (left rail), `DetailPanel.tsx` (right rail), `AnalyticsPanel.tsx` (bottom drawer), `CommandBar.tsx` (AI chat), `TimeRangeSlider.tsx` (temporal filter)
+- `src/components/explorer/layers/` — Map layers: `NeighborhoodBaseLayer`, `ComplaintsLayer`, `CrimeLayer`, `TransitLayer`, `VacancyLayer`, `FoodAccessLayer`, `DemographicsLayer`, `StandaloneNeighborhoodLayer`
+- `src/components/explorer/detail/` — Entity detail views: `NeighborhoodDetail`, `NeighborhoodComparePanel`, `VacancyDetail`, `StopDetail`, `GroceryDetail`, `FoodDesertDetail`, `useNeighborhoodMetrics` hook
+- `src/components/explorer/analytics/` — Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `NeighborhoodAnalytics`, `MiniKpi`, `chart-builder/` (ChartCanvas, ChartControls, useChartBuilder)
+- `src/components/landing/` — `LandingPage`
+- `src/components/about/` — `AboutPage`
 - `src/components/map/` — `MapProvider` (Mapbox wrapper), `MapLegend`
 - `src/components/charts/` — Reusable charts: `TimeSeriesChart`, `CategoryBarChart`, `HourlyChart`, `WeekdayChart`, `WeatherInsights`
 - `src/components/ui/` — shadcn/ui primitives
-- `src/lib/` — Business logic: `analysis.ts` (hotspot detection, weather correlation), `equity.ts` (haversine, equity scoring), `scoring.ts` (vacancy triage), `colors.ts` (choropleth scales), `types.ts` (all interfaces), `explorer-types.ts` (state/action types), `vacancy-data.ts` (mock generator), `chart-datasets.ts` (ChartBuilder datasets)
+- `src/lib/` — Business logic: `analysis.ts` (hotspot detection, weather correlation), `equity.ts` (haversine, equity scoring), `scoring.ts` (vacancy triage), `colors.ts` (choropleth scales), `types.ts` (all interfaces), `explorer-types.ts` (state/action types), `chart-datasets.ts` (ChartBuilder datasets), `neighborhood-metrics.ts`
+- `src/lib/ai/` — AI system: `system-prompt.ts`, `tools.ts`, `use-chat.ts`, `action-executor.ts`, `data-executor.ts`, `kpi-snapshot.ts`, `neighborhood-resolver.ts`, `command-bar-events.ts`
 
 ### Map Setup
 

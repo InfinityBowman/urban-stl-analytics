@@ -14,7 +14,6 @@ import type {
   ExplorerState,
   LayerToggles,
 } from '@/lib/explorer-types'
-import { generateVacancyData } from '@/lib/vacancy-data'
 import { initialExplorerState } from '@/lib/explorer-types'
 
 // ── Reducer ────────────────────────────────────────────────
@@ -43,8 +42,14 @@ function explorerReducer(
       return { ...state, selected: null, detailPanelOpen: false }
     case 'CLOSE_DETAIL':
       return { ...state, detailPanelOpen: false }
+    case 'OPEN_MOBILE_LAYER_DRAWER':
+      return { ...state, mobileLayerDrawerOpen: true }
+    case 'CLOSE_MOBILE_LAYER_DRAWER':
+      return { ...state, mobileLayerDrawerOpen: false }
     case 'TOGGLE_ANALYTICS':
       return { ...state, analyticsPanelExpanded: !state.analyticsPanelExpanded }
+    case 'SET_ANALYTICS_TAB':
+      return { ...state, analyticsTab: action.tab }
     case 'SET_ANALYTICS_HEIGHT':
       return {
         ...state,
@@ -210,7 +215,6 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
         break
 
       case 'vacancy':
-        // Try to load real vacancy data; fall back to mock generator
         fetch('/data/vacancies.json')
           .then((r) => {
             if (!r.ok) throw new Error('not found')
@@ -219,12 +223,7 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
           .then((vacancyData) => {
             setData((prev) => ({ ...prev, vacancyData }))
           })
-          .catch(() => {
-            setData((prev) => ({
-              ...prev,
-              vacancyData: generateVacancyData(),
-            }))
-          })
+          .catch(() => markFailed('vacancy'))
         break
 
       case 'foodAccess':
@@ -276,6 +275,19 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
         break
     }
   }, [])
+
+  // Eagerly load ALL datasets on mount so the AI chat can query any data
+  // without requiring the user to enable layers first.
+  // The `fetched` ref prevents double-fetching when layers are later toggled.
+  useEffect(() => {
+    loadLayerData('complaints')
+    loadLayerData('crime')
+    loadLayerData('transit')
+    loadLayerData('vacancy')
+    loadLayerData('foodAccess')
+    loadLayerData('arpa')
+    loadLayerData('demographics')
+  }, [loadLayerData])
 
   // Trigger lazy loads when layers are toggled on
   useEffect(() => {

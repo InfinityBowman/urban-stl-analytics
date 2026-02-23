@@ -258,8 +258,8 @@ table tbody tr {
 .layer-range-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-primary);
   border: 2px solid var(--color-background);
@@ -271,13 +271,23 @@ table tbody tr {
   transform: scale(1.15);
 }
 .layer-range-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-primary);
   border: 2px solid var(--color-background);
   box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
   cursor: pointer;
+}
+@media (pointer: coarse) {
+  .layer-range-slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .layer-range-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 /* ── Mapbox cleanup ──────────────────────────────────────── */
@@ -309,13 +319,19 @@ table tbody tr {
 }
 
 .mapboxgl-ctrl-group button {
-  width: 30px !important;
-  height: 30px !important;
+  width: 36px !important;
+  height: 36px !important;
   border: none !important;
   border-bottom: none !important;
   background: transparent !important;
   color: oklch(0.5 0.027 269) !important;
   transition: color 0.15s, background 0.15s;
+}
+@media (pointer: coarse) {
+  .mapboxgl-ctrl-group button {
+    width: 44px !important;
+    height: 44px !important;
+  }
 }
 
 .mapboxgl-ctrl-group button + button {

@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
-  Search01Icon,
+  Delete02Icon,
   SentIcon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
 import { useChartBuilder } from './analytics/chart-builder/useChartBuilder'
 import type { ActionResult } from '@/lib/ai/action-executor'
-import type { ToolCall } from '@/lib/ai/use-chat'
 import { executeToolCall } from '@/lib/ai/action-executor'
 import { commandBarEvents } from '@/lib/ai/command-bar-events'
+import { executeDataTool } from '@/lib/ai/data-executor'
 import { buildKpiSnapshot } from '@/lib/ai/kpi-snapshot'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
+import type { ToolCall } from '@/lib/ai/use-chat'
 import { useChat } from '@/lib/ai/use-chat'
 import { cn } from '@/lib/utils'
 
@@ -34,7 +35,7 @@ export function CommandBar() {
   const { state, dispatch } = useExplorer()
   const data = useData()
   const [, chartDispatch] = useChartBuilder()
-  const { messages, isStreaming, sendMessage, toolCalls } = useChat()
+  const { messages, isStreaming, sendMessage, toolCalls, reset } = useChat()
 
   // Refs for values needed in tool execution (avoids re-running effect on state changes)
   const stateRef = useRef(state)
@@ -80,10 +81,20 @@ export function CommandBar() {
   useEffect(() => {
     if (toolCalls.length === 0) return
     const results: Array<ActionResult> = []
+    // Track toggled layers to prevent double-toggle when multiple tool calls
+    // try to enable the same layer (state snapshot is stale within this batch)
+    const toggledLayers = new Set<string>()
+    const guardedDispatch: typeof dispatch = (action) => {
+      if (action.type === 'TOGGLE_LAYER') {
+        if (toggledLayers.has(action.layer)) return
+        toggledLayers.add(action.layer)
+      }
+      dispatch(action)
+    }
     for (const tc of toolCalls) {
       const result = executeToolCall(tc, {
         state: stateRef.current,
-        dispatch,
+        dispatch: guardedDispatch,
         chartDispatch,
         data: dataRef.current,
       })
@@ -91,6 +102,13 @@ export function CommandBar() {
     }
     setActionResults(results)
   }, [toolCalls, dispatch, chartDispatch])
+
+  // Resolve data tool calls against current ExplorerData
+  const resolveDataTools = useCallback(
+    (tools: Array<ToolCall>) =>
+      tools.map((tc) => executeDataTool(tc, dataRef.current)),
+    [],
+  )
 
   const handleSubmit = useCallback(
     async (text?: string) => {
@@ -100,11 +118,11 @@ export function CommandBar() {
       setInput('')
       setActionResults([])
 
-      const kpiSnapshot = buildKpiSnapshot(state, data)
+      const kpiSnapshot = buildKpiSnapshot(data)
       const context = buildSystemPrompt(state, kpiSnapshot, data)
-      await sendMessage(query, context)
+      await sendMessage(query, context, resolveDataTools)
     },
-    [input, isStreaming, state, data, sendMessage],
+    [input, isStreaming, state, data, sendMessage, resolveDataTools],
   )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,32 +137,42 @@ export function CommandBar() {
   return (
     <div
       className={cn(
-        'fixed bottom-4 z-50 flex w-[420px] flex-col',
+        'fixed bottom-4 z-50 flex w-105 flex-col',
         'left-[calc(280px+(100vw-280px)/2)] -translate-x-1/2',
-        'rounded-xl border border-border/60 bg-card/90 shadow-xl backdrop-blur-xl',
+        'rounded-xl border-2 border-transparent bg-card/90 bg-clip-padding shadow-xl backdrop-blur-xl',
+        '[background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-lighter),var(--brand),var(--brand-light))_border-box]',
         'animate-in fade-in slide-in-from-bottom-3 duration-200',
+        'max-md:left-1/2 max-md:w-[min(420px,calc(100%-1rem))] max-md:-translate-x-1/2',
         'max-sm:inset-x-2 max-sm:bottom-2 max-sm:w-auto max-sm:translate-x-0',
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            strokeWidth={2}
-            className="text-muted-foreground"
-          />
           <span className="text-xs font-medium text-muted-foreground">
             Ask AI
           </span>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                reset()
+                setActionResults([])
+              }}
+              title="New chat"
+              className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={2} />
+            </button>
+          )}
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded-md p-0.5 text-muted-foreground/60 transition-colors hover:bg-accent/40 hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       {/* Messages area */}
@@ -202,28 +230,32 @@ export function CommandBar() {
             )}
 
             {/* Follow-up quick actions */}
-            {!isStreaming && messages.length > 0 && messages.at(-1)?.role === 'assistant' && (
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => handleSubmit('Chart this data for me')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  Chart this
-                </button>
-                <button
-                  onClick={() => handleSubmit('Tell me more details')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  Tell me more
-                </button>
-                <button
-                  onClick={() => handleSubmit('Which neighborhoods are most affected?')}
-                  className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                >
-                  By neighborhood
-                </button>
-              </div>
-            )}
+            {!isStreaming &&
+              messages.length > 0 &&
+              messages.at(-1)?.role === 'assistant' && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleSubmit('Chart this data for me')}
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    Chart this
+                  </button>
+                  <button
+                    onClick={() => handleSubmit('Tell me more details')}
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    Tell me more
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSubmit('Which neighborhoods are most affected?')
+                    }
+                    className="rounded-md border border-border/40 px-2 py-1 text-[0.6rem] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  >
+                    By neighborhood
+                  </button>
+                </div>
+              )}
           </>
         )}
       </div>
@@ -240,7 +272,12 @@ export function CommandBar() {
           disabled={isStreaming}
         />
         {isStreaming ? (
-          <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[0.6rem] text-muted-foreground/60">
+              thinking...
+            </span>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+          </div>
         ) : (
           <button
             onClick={() => handleSubmit()}

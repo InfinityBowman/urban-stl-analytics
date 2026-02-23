@@ -76,7 +76,7 @@ export function NeighborhoodAnalytics({ id }: { id: string }) {
     <div className="flex flex-col gap-3">
       <div className="text-xs font-bold">{hood.name} — Cross-Dataset View</div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniKpi label="311" value={hood.total.toLocaleString()} />
         <MiniKpi label="Vacancies" value={String(hoodVacancies.length)} />
         <MiniKpi label="Stops" value={String(nearbyStops.length)} />

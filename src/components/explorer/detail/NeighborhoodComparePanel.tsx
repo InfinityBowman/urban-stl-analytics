@@ -41,6 +41,11 @@ function DeltaArrow({
   )
 }
 
+function formatValue(v: number, unit: string): string {
+  if (!isFinite(v)) return 'N/A'
+  return v.toLocaleString() + unit
+}
+
 function CompareRow({
   label,
   valueA,
@@ -54,15 +59,16 @@ function CompareRow({
   unit?: string
   invertGood?: boolean
 }) {
-  const diff =
-    valueB !== 0 ? ((valueA - valueB) / valueB) * 100 : valueA > 0 ? 100 : 0
+  const canCompare = isFinite(valueA) && isFinite(valueB)
+  const diff = canCompare
+    ? valueB !== 0 ? ((valueA - valueB) / valueB) * 100 : valueA > 0 ? 100 : 0
+    : 0
 
   return (
     <div className="flex items-center gap-2 py-1.5">
       <div className="w-[38%] text-right">
         <span className="font-semibold text-blue-400">
-          {valueA.toLocaleString()}
-          {unit}
+          {formatValue(valueA, unit)}
         </span>
       </div>
       <div className="w-[24%] text-center">
@@ -70,10 +76,9 @@ function CompareRow({
       </div>
       <div className="w-[38%] text-left">
         <span className="font-semibold text-orange-400">
-          {valueB.toLocaleString()}
-          {unit}
+          {formatValue(valueB, unit)}
         </span>
-        <DeltaArrow value={diff} invertGood={invertGood} />
+        {canCompare && <DeltaArrow value={diff} invertGood={invertGood} />}
       </div>
     </div>
   )

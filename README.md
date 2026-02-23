@@ -1,27 +1,34 @@
 # STL Urban Analytics
 
-A unified urban data analytics platform for the City of St. Louis, combining **311 complaints**, **crime data**, **transit equity**, **vacancy triage**, **food access**, **census demographics**, and **ARPA fund expenditures** into a single fullscreen Map Explorer with cross-dataset analysis.
+A unified urban data analytics platform for the City of St. Louis, combining **311 complaints**, **crime data**, **transit equity**, **vacancy triage**, **food access**, **census demographics**, and **ARPA fund expenditures** into an AI-powered Map Explorer with integrated analytics.
 
 Built for the _St. Louis Sustainable Urban Innovation_ hackathon track.
 
-## Map Explorer (`/`)
+## Pages
 
-A fullscreen, map-centric dashboard with seven toggleable data layers and integrated analytics.
+### Landing (`/`)
 
-### Layout
+Splash page introducing the platform with navigation to the main dashboards.
+
+### Map Explorer (`/explore`)
+
+A fullscreen, map-centric dashboard with seven toggleable data layers, an AI command bar, and integrated analytics.
+
+#### Layout
 
 - **Layer Panel** (left rail) — Toggle layers on/off with contextual sub-filters (choropleth/heatmap mode, category pills, transit sub-layers, vacancy dropdowns + score slider, food desert/grocery toggles)
 - **Map** (center) — Mapbox GL (light-v11) with click-to-select on any entity
-- **Detail Panel** (right rail) — Opens on click with entity-specific detail views
+- **Detail Panel** (right rail) — Opens on click with entity-specific detail views, neighborhood comparison
 - **Analytics Panel** (bottom drawer) — Collapsible/resizable analytics with KPI chips, per-layer analytics modules, cross-dataset neighborhood view, and a ChartBuilder
+- **Command Bar** (`Cmd+K` / `Ctrl+K`) — AI-powered natural language interface for querying data, toggling layers, and generating charts
 
-### Data Layers
+#### Data Layers
 
 **311 Complaints** — Choropleth or heatmap of complaint density by neighborhood. Category filtering (top 8 types). Analytics: daily volume chart, hourly/weekday distribution, weather correlation, category breakdown.
 
 **Transit** — Metro stops, route shapes, 0.5-mile walksheds. Analytics: equity gap scoring per LILA census tract (0–100) factoring walkable stops, service frequency, grocery proximity, and transit-to-grocery connectivity.
 
-**Vacancy** — ~800 mock vacant properties as scored circles (red → green). Filters: best use, owner, type, neighborhood, min score. Detail view: six-factor triage score breakdown, recent 311 complaints, recommended best use (housing / solar / garden).
+**Vacancy** — Vacant properties as scored circles (red → green). Filters: best use, owner, type, neighborhood, min score. Detail view: six-factor triage score breakdown, recent 311 complaints, recommended best use (housing / solar / garden).
 
 **Food Access** — LILA food desert tracts and grocery store locations. Detail view: demographics, nearby transit, nearest grocery, equity score.
 
@@ -31,10 +38,27 @@ A fullscreen, map-centric dashboard with seven toggleable data layers and integr
 
 **ARPA Funds** — Analytics-only layer (no map visualization). Monthly spending + cumulative line, category breakdown, top vendors and projects lists.
 
-### Cross-Dataset Features
+#### Cross-Dataset Features
 
 - **Neighborhood click** — Eagerly loads all datasets. Detail panel shows composite equity score (transit + 311 + food + vacancy) with breakdown bars. Analytics switches to cross-dataset view with top 311 issues chart and best rehab candidates.
+- **Neighborhood comparison** — Side-by-side comparison of metrics across neighborhoods.
 - **ChartBuilder** — User-configurable charts from underlying datasets with multi-series support, chart type toggles, and dual-axis.
+
+### Housing Prices (`/housing`)
+
+Placeholder — real housing data integration in progress.
+
+### Affected Areas (`/affected`)
+
+Placeholder — real neighborhood impact data integration in progress.
+
+### Population (`/population`)
+
+Placeholder — real Census population data integration in progress.
+
+### About (`/about`)
+
+Project information and methodology overview.
 
 ## Tech Stack
 
@@ -46,8 +70,10 @@ A fullscreen, map-centric dashboard with seven toggleable data layers and integr
 | Map           | [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) via [react-map-gl](https://visgl.github.io/react-map-gl/) |
 | Charts        | [Recharts](https://recharts.org/)                                                                               |
 | Hosting       | [Cloudflare Workers](https://developers.cloudflare.com/workers/) via `@cloudflare/vite-plugin`                  |
-| Data          | Static JSON/GeoJSON in `public/data/`, real vacancy data with mock fallback                                     |
+| AI            | [OpenRouter](https://openrouter.ai/) API via server function + tool-use chat                                    |
+| Data          | Static JSON/GeoJSON in `public/data/` from civic APIs                                                           |
 | Data Pipeline | Python 3.12 + [uv](https://docs.astral.sh/uv/) (pandas, geopandas, shapely)                                     |
+| ML            | OLS regression models for housing/neighborhood predictions                                                      |
 | Analysis      | Jupyter notebooks with matplotlib + folium                                                                      |
 
 ## Getting Started
@@ -71,6 +97,7 @@ Create a `.env` file (see `.env.example`):
 
 ```
 VITE_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
+OPENROUTER_API_KEY=sk-or-...   # Optional: enables AI command bar
 ```
 
 ### Develop
@@ -113,8 +140,17 @@ uv run jupyter lab                     # Launch Jupyter for exploration notebook
 ```
 src/
 ├── routes/
-│   ├── __root.tsx                Root layout (nav shell)
-│   └── index.tsx                 Renders <MapExplorer />
+│   ├── __root.tsx                Root layout
+│   ├── _bare.tsx                 Bare layout (no nav)
+│   ├── _bare/index.tsx           Landing page
+│   ├── _app.tsx                  App layout (nav shell)
+│   ├── _app/
+│   │   ├── explore.tsx           Map Explorer
+│   │   ├── housing.tsx           Housing Prices (placeholder)
+│   │   ├── affected.tsx          Affected Neighborhoods (placeholder)
+│   │   ├── population.tsx        Population (placeholder)
+│   │   └── about.tsx             About page
+│   └── api/chat.ts              AI chat server endpoint
 ├── components/
 │   ├── explorer/
 │   │   ├── MapExplorer.tsx       Top-level CSS grid layout
@@ -123,6 +159,8 @@ src/
 │   │   ├── LayerPanel.tsx        Left rail: layer toggles + sub-filters
 │   │   ├── DetailPanel.tsx       Right rail: entity detail dispatch
 │   │   ├── AnalyticsPanel.tsx    Bottom drawer: collapsible analytics
+│   │   ├── CommandBar.tsx        AI chat overlay (Cmd+K)
+│   │   ├── TimeRangeSlider.tsx   Temporal data filtering
 │   │   ├── layers/
 │   │   │   ├── NeighborhoodBaseLayer.tsx
 │   │   │   ├── ComplaintsLayer.tsx
@@ -130,22 +168,33 @@ src/
 │   │   │   ├── TransitLayer.tsx
 │   │   │   ├── VacancyLayer.tsx
 │   │   │   ├── FoodAccessLayer.tsx
-│   │   │   └── DemographicsLayer.tsx
+│   │   │   ├── DemographicsLayer.tsx
+│   │   │   └── StandaloneNeighborhoodLayer.tsx
 │   │   ├── detail/
-│   │   │   ├── NeighborhoodDetail.tsx  Composite score + cross-dataset
-│   │   │   ├── VacancyDetail.tsx       Triage score breakdown
-│   │   │   ├── StopDetail.tsx          Stop info + routes
-│   │   │   ├── GroceryDetail.tsx       Store + nearest desert
-│   │   │   └── FoodDesertDetail.tsx    Demographics + equity score
-│   │   └── analytics/
-│   │       ├── ComplaintsAnalytics.tsx  311 charts + KPIs
-│   │       ├── CrimeAnalytics.tsx      Crime charts + KPIs
-│   │       ├── TransitAnalytics.tsx    Equity gap list
-│   │       ├── VacancyAnalytics.tsx    Score distribution
-│   │       ├── ArpaAnalytics.tsx       ARPA spending charts
-│   │       ├── DemographicsAnalytics.tsx Census data charts
-│   │       ├── NeighborhoodAnalytics.tsx Cross-dataset view
-│   │       └── ChartBuilder.tsx        User-configurable charts
+│   │   │   ├── NeighborhoodDetail.tsx      Composite score + cross-dataset
+│   │   │   ├── NeighborhoodComparePanel.tsx Neighborhood comparison
+│   │   │   ├── useNeighborhoodMetrics.ts   Metrics computation hook
+│   │   │   ├── VacancyDetail.tsx           Triage score breakdown
+│   │   │   ├── StopDetail.tsx              Stop info + routes
+│   │   │   ├── GroceryDetail.tsx           Store + nearest desert
+│   │   │   └── FoodDesertDetail.tsx        Demographics + equity score
+│   │   ├── analytics/
+│   │   │   ├── ComplaintsAnalytics.tsx     311 charts + KPIs
+│   │   │   ├── CrimeAnalytics.tsx         Crime charts + KPIs
+│   │   │   ├── TransitAnalytics.tsx       Equity gap list
+│   │   │   ├── VacancyAnalytics.tsx       Score distribution
+│   │   │   ├── ArpaAnalytics.tsx          ARPA spending charts
+│   │   │   ├── DemographicsAnalytics.tsx  Census data charts
+│   │   │   ├── NeighborhoodAnalytics.tsx  Cross-dataset view
+│   │   │   ├── MiniKpi.tsx                Compact KPI display
+│   │   │   └── chart-builder/
+│   │   │       ├── ChartCanvas.tsx        Chart rendering
+│   │   │       ├── ChartControls.tsx      Chart config UI
+│   │   │       └── useChartBuilder.tsx    Chart state hook
+│   ├── landing/
+│   │   └── LandingPage.tsx       Splash / landing page
+│   ├── about/
+│   │   └── AboutPage.tsx         About / methodology
 │   ├── map/
 │   │   ├── MapProvider.tsx       Shared Mapbox GL wrapper (light-v11)
 │   │   └── MapLegend.tsx         Choropleth / gradient legend
@@ -164,12 +213,22 @@ src/
 │   ├── equity.ts                 Haversine, equity gap scoring
 │   ├── scoring.ts                Vacancy triage scoring + best-use
 │   ├── colors.ts                 Choropleth scales, score colors
-│   ├── vacancy-data.ts           Deterministic mock data generator
 │   ├── chart-datasets.ts         ChartBuilder dataset registry
-│   └── utils.ts                  cn() helper
+│   ├── neighborhood-metrics.ts   Neighborhood metric calculations
+│   ├── utils.ts                  cn() helper
+│   └── ai/
+│       ├── system-prompt.ts      AI system prompt construction
+│       ├── tools.ts              AI tool definitions
+│       ├── use-chat.ts           Chat hook (streaming + tool calls)
+│       ├── action-executor.ts    Executes AI-generated map actions
+│       ├── data-executor.ts      Executes AI data queries
+│       ├── kpi-snapshot.ts       Builds KPI context for AI
+│       ├── neighborhood-resolver.ts Resolves neighborhood queries
+│       └── command-bar-events.ts Event bus for command bar toggle
 public/
 └── data/
     ├── csb_latest.json           311 complaints aggregated (1.6 MB)
+    ├── csb_2025.json             2025 311 complaints
     ├── trends.json               Year-over-year + weather data (24 KB)
     ├── neighborhoods.geojson     79 neighborhood polygons (184 KB)
     ├── stops.geojson             Metro Transit stops (872 KB)
@@ -189,8 +248,15 @@ python/
 │   ├── fetch_raw.py              Download raw datasets → data/raw/
 │   └── clean_data.py             Process raw data → public/data/
 ├── data/raw/                     Raw downloads (gitignored)
-└── notebooks/
-    └── raw_data.ipynb            Interactive data exploration notebook
+├── notebooks/
+│   ├── raw_data.ipynb            Interactive data exploration
+│   ├── exploration.ipynb         Data exploration notebook
+│   └── ml.ipynb                  Machine learning notebook
+└── training/
+    ├── ols.py                    OLS regression training script
+    ├── model2_codebook.json      Model variable codebook
+    ├── crosssectional_*.csv      Cross-sectional train/test data
+    └── panel_*.csv               Panel train/test/full data
 ```
 
 ## Data Sources
@@ -202,7 +268,7 @@ python/
 | Transit (GTFS)          | [Metro Transit](https://www.metrostlouis.org/developer-resources/) | Converted from GTFS to GeoJSON |
 | Food Desert Tracts      | USDA Economic Research Service (LILA definitions)                  | Simplified GeoJSON             |
 | Grocery Stores          | Manual compilation + geocoding                                     | GeoJSON                        |
-| Vacant Properties       | City of STL Vacant Building List (fallback: mock data)             | JSON                           |
+| Vacant Properties       | City of STL Vacant Building List                                   | JSON                           |
 | Crime Incidents         | [SLMPD](https://www.slmpd.org/crime_stats.shtml) NIBRS data       | Pre-processed JSON from CSV    |
 | ARPA Expenditures       | [City of STL Open Data](https://www.stlouis-mo.gov/)              | JSON API                       |
 | Census Demographics     | City of STL Planning Dept neighborhood census pages                | Scraped HTML → JSON            |
