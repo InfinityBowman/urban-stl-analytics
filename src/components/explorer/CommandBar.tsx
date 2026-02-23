@@ -139,8 +139,10 @@ export function CommandBar() {
       className={cn(
         'fixed bottom-4 z-50 flex w-105 flex-col',
         'left-[calc(280px+(100vw-280px)/2)] -translate-x-1/2',
-        'rounded-xl border border-border/60 bg-card/90 shadow-xl backdrop-blur-xl',
+        'rounded-xl border-2 border-transparent bg-card/90 bg-clip-padding shadow-xl backdrop-blur-xl',
+        '[background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-lighter),var(--brand),var(--brand-light))_border-box]',
         'animate-in fade-in slide-in-from-bottom-3 duration-200',
+        'max-md:left-1/2 max-md:w-[min(420px,calc(100%-1rem))] max-md:-translate-x-1/2',
         'max-sm:inset-x-2 max-sm:bottom-2 max-sm:w-auto max-sm:translate-x-0',
       )}
     >

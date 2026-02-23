@@ -1,28 +1,44 @@
 # Project Findings & Assessment
 
-## Data Authenticity Map
+## Data Authenticity
 
-### Real Data (from Python pipeline / civic APIs)
+All data in the explorer is now sourced from real civic APIs via the Python pipeline:
+
 - `public/data/csb_latest.json` / `csb_2025.json` — 311 complaints (City of STL CSB)
 - `public/data/neighborhoods.geojson` — 79 neighborhood boundaries
 - `public/data/crime.json` — SLMPD crime incidents
 - `public/data/stops.geojson` / `shapes.geojson` / `routes.json` / `stop_stats.json` — GTFS transit
 - `public/data/food_deserts.geojson` / `grocery_stores.geojson` — USDA Food Access Atlas
 - `public/data/demographics.json` — Census demographics per neighborhood
-- `public/data/vacancies.json` — Real vacant building data
+- `public/data/vacancies.json` — Vacant building data
 - `public/data/arpa.json` — ARPA fund expenditures
 - `public/data/trends.json` — Weather and temporal trend data
 
-### Fabricated / Hardcoded Data
+### Removed (was fabricated)
 
-| File | Used In | What's Fake |
+The following fake/hardcoded data was removed from the project:
+
+| Removed File | Was Used In | Why Removed |
 |------|---------|-------------|
 | `src/lib/price-data.ts` | `/housing` tab | Hardcoded housing prices (not from Zillow/Redfin) |
 | `src/lib/population-history.ts` | `/population` tab | Static population arrays going back to 1810 |
 | `src/lib/migration-data.ts` | `/population` + `/affected` tabs | Fabricated migration/affected neighborhood data |
 | `src/lib/community-voices.ts` | Explorer Community Voice layer | ~40 fabricated resident quotes with fake authors |
-| `src/components/explorer/insights/AIInsightNarrative.tsx` | Explorer neighborhood detail panel | "AI Insights" uses seeded RNG, not actual AI |
-| `src/lib/vacancy-data.ts` | Explorer (fallback only) | Mock vacancy generator, only used if `vacancies.json` is missing |
+| `src/components/explorer/insights/AIInsightNarrative.tsx` | Explorer neighborhood detail panel | "AI Insights" used seeded RNG, not actual AI |
+| `src/lib/vacancy-data.ts` | Explorer (fallback only) | Mock vacancy generator fallback |
+
+Also removed: `HousingPriceLayer`, `CommunityVoiceLayer`, `AffectedNeighborhoodsLayer`, `CommunityVoiceDetail`, `HousingPricesDashboard`, `HousingPriceHistoryChart`, `AffectedNeighborhoodsDashboard`, and the entire `src/components/population/` directory.
+
+The `/housing`, `/affected`, and `/population` routes are now placeholder pages pending real data integration.
+
+### Still Needed
+
+Real data sources for the placeholder pages:
+- **Housing**: Zillow ZHVI, Redfin, Census ACS rent data, or city property sales records
+- **Population**: Census Decennial/ACS 5-Year data, IRS migration data
+- **Affected Areas**: Derived from cross-dataset analysis once housing + population data exists
+
+See `docs/DATA-SOURCES.md` for the full list of available data sources.
 
 ## Strengths
 
@@ -34,14 +50,11 @@
 - **Equity scoring**: Real weighted composite (transit + complaints + food access + vacancy)
 - **Vacancy triage**: Weighted scoring (condition, complaint density, ownership, tax delinquency, proximity, lot size)
 
-## Weak Spots
+## Remaining Weak Spots
 
-- Fabricated data in standalone tabs undermines credibility
-- AIInsightNarrative is misleadingly labeled — uses seeded random, not AI
-- Standalone dashboards (housing, population, affected) are thin / mostly static renders
+- Standalone dashboards (housing, population, affected) are placeholder stubs — need real data
 - Mobile is an afterthought — responsive grid exists but explorer is desktop-only in practice
 - No loading skeletons — just "Loading data..." text
-- `LayerPanel.tsx` at 786 lines is monolithic
 - No dark mode toggle exposed (CSS is defined but no UI toggle)
 - No URL state sync for sharing specific views
 - No abort/cancel button in AI chat UI
@@ -56,13 +69,12 @@
 ## Suggested Next Steps
 
 ### If continuing as a product
-1. Replace all fabricated data with real sources (Zillow/Redfin API, Census API, real community input)
+1. Integrate real data for housing, population, and affected pages (see `docs/DATA-SOURCES.md`)
 2. Add user auth + saved views (bookmarked neighborhoods, saved chart configs, shareable URLs)
-3. Upgrade AI — switch from `z-ai/glm-5` to Claude or GPT-4o, replace fake AIInsightNarrative with real LLM analysis
+3. Enhance AI — add more data tools, richer system prompt context, or multi-turn reasoning
 4. Multi-city abstraction — extract STL-specific data sources into a config layer
 
 ### Quick wins
-- Wire `AIInsightNarrative` to existing OpenRouter endpoint instead of seeded RNG
 - Add crime data to neighborhood detail panel (data loaded, just not displayed)
 - Surface a dark mode toggle (CSS already defined)
 - Add URL state sync (`?layers=crime,transit&neighborhood=15`)

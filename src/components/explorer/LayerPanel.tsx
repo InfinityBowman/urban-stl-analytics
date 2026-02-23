@@ -8,6 +8,7 @@ import {
   Store01Icon,
   UserGroupIcon,
   DollarCircleIcon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
 import { Slider } from '@/components/ui/slider'
@@ -74,7 +75,7 @@ const LAYER_CONFIG: Array<{
   },
 ]
 
-export function LayerPanel() {
+export function LayerPanel({ onClose }: { onClose?: () => void } = {}) {
   const { state, dispatch } = useExplorer()
 
   const activeCount = Object.values(state.layers).filter(Boolean).length
@@ -96,23 +97,34 @@ export function LayerPanel() {
             {activeCount || 0}
           </span>
         </div>
-        <button
-          onClick={() => {
-            for (const key of Object.keys(state.layers) as Array<
-              keyof LayerToggles
-            >) {
-              if (state.layers[key]) {
-                dispatch({ type: 'TOGGLE_LAYER', layer: key })
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              for (const key of Object.keys(state.layers) as Array<
+                keyof LayerToggles
+              >) {
+                if (state.layers[key]) {
+                  dispatch({ type: 'TOGGLE_LAYER', layer: key })
+                }
               }
-            }
-          }}
-          className={cn(
-            'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
-            activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+            }}
+            className={cn(
+              'text-[0.62rem] font-medium text-foreground/55 transition-all duration-150 hover:text-foreground',
+              activeCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+          >
+            Clear all
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground/55 transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Close"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4" />
+            </button>
           )}
-        >
-          Clear all
-        </button>
+        </div>
       </div>
 
       {/* Layer list */}

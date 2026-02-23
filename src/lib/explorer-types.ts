@@ -69,6 +69,7 @@ export interface ExplorerState {
   compareMode: boolean
   compareNeighborhoodA: string | null
   compareNeighborhoodB: string | null
+  mobileLayerDrawerOpen: boolean
 }
 
 // ── Actions ────────────────────────────────────────────────
@@ -90,6 +91,8 @@ export type ExplorerAction =
   | { type: 'TOGGLE_COMPARE_MODE' }
   | { type: 'SET_COMPARE_NEIGHBORHOOD'; slot: 'A' | 'B'; id: string }
   | { type: 'CLEAR_COMPARE_NEIGHBORHOOD'; slot: 'A' | 'B' }
+  | { type: 'OPEN_MOBILE_LAYER_DRAWER' }
+  | { type: 'CLOSE_MOBILE_LAYER_DRAWER' }
 
 // ── Data Context ───────────────────────────────────────────
 
@@ -151,4 +154,5 @@ export const initialExplorerState: ExplorerState = {
   compareMode: false,
   compareNeighborhoodA: null,
   compareNeighborhoodB: null,
+  mobileLayerDrawerOpen: false,
 }

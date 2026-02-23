@@ -5,6 +5,8 @@ import { LayerPanel } from './LayerPanel'
 import { DetailPanel } from './DetailPanel'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { CommandBar } from './CommandBar'
+import { LayerFab } from './LayerFab'
+import { MobileLayerDrawer } from './MobileLayerDrawer'
 import { cn } from '@/lib/utils'
 
 function ExplorerLayout() {
@@ -15,42 +17,53 @@ function ExplorerLayout() {
       className={cn(
         'grid h-full w-full',
         'grid-cols-[280px_1fr] grid-rows-[1fr_auto]',
-        'max-lg:grid-cols-1 max-lg:grid-rows-[auto_50vh_auto_auto]',
+        'max-md:grid-cols-1 max-md:grid-rows-1',
       )}
-      style={{
-        gridTemplateAreas: `
-          "layers map"
-          "analytics analytics"
-        `,
-      }}
     >
-      <div
-        className="overlay-scroll overflow-y-auto border-r border-border/60 max-lg:border-r-0 max-lg:border-b max-lg:border-border/60"
-        style={{ gridArea: 'layers' }}
-      >
+      {/* LayerPanel — desktop only (mobile uses Sheet drawer) */}
+      <div className="overlay-scroll hidden overflow-y-auto border-r border-border/60 md:block">
         <LayerPanel />
       </div>
 
-      <div className="relative min-h-0 overflow-hidden" style={{ gridArea: 'map' }}>
+      {/* Map cell — fills remaining space */}
+      <div className="relative min-h-0 overflow-hidden">
         <ExplorerMap />
 
-        {/* Detail panel — always mounted, slides via transform */}
+        {/* Detail panel — desktop: right-slide; mobile: fixed bottom sheet */}
         <div
           className={cn(
-            'absolute inset-y-0 right-0 z-10 w-[380px] border-l border-border/60 bg-background shadow-lg transition-transform duration-150 ease-out will-change-transform',
-            'max-lg:relative max-lg:inset-auto max-lg:w-full max-lg:border-l-0 max-lg:border-t max-lg:shadow-none',
+            'absolute inset-y-0 right-0 z-10 w-[min(380px,100%)]',
+            'border-l border-border/60 bg-background shadow-lg',
+            'transition-transform duration-200 ease-out will-change-transform',
+            'max-md:fixed max-md:inset-auto max-md:bottom-0 max-md:left-0 max-md:right-0',
+            'max-md:z-20 max-md:w-full max-md:h-[50vh] max-md:max-h-[50vh]',
+            'max-md:border-l-0 max-md:border-t max-md:rounded-t-xl',
+            'max-md:overflow-hidden',
             state.detailPanelOpen
-              ? 'translate-x-0'
-              : 'translate-x-full max-lg:hidden',
+              ? 'translate-x-0 max-md:translate-y-0'
+              : 'translate-x-full max-md:translate-x-0 max-md:translate-y-full',
           )}
         >
-          <DetailPanel />
+          {/* Drag handle — mobile only */}
+          <div className="hidden max-md:flex max-md:shrink-0 max-md:justify-center max-md:pt-2 max-md:pb-1">
+            <div className="h-1 w-10 rounded-full bg-border" />
+          </div>
+          <div className="flex h-full flex-col max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto">
+            <DetailPanel />
+          </div>
         </div>
+
+        {/* Floating layer toggle — mobile only */}
+        <LayerFab />
       </div>
 
-      <div style={{ gridArea: 'analytics' }}>
+      {/* AnalyticsPanel — desktop only */}
+      <div className="col-span-full max-md:hidden">
         <AnalyticsPanel />
       </div>
+
+      {/* Mobile layer drawer (Sheet portal) */}
+      <MobileLayerDrawer />
     </div>
   )
 }

@@ -78,7 +78,7 @@ export function DemographicsAnalytics() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniKpi label="Population" value={kpis.population.toLocaleString()} />
         <MiniKpi label="Vacancy Rate" value={`${kpis.vacancyRate}%`} />
         <MiniKpi label="Avg Pop Change" value={`${kpis.avgPopChange}%`} />

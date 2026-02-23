@@ -1,15 +1,15 @@
 import { Link } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Search01Icon } from '@hugeicons/core-free-icons'
+import { SparklesIcon } from '@hugeicons/core-free-icons'
 import { commandBarEvents } from '@/lib/ai/command-bar-events'
 
 export function Nav() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-card/85 backdrop-blur-lg">
-      <div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center px-4">
+      <div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 max-md:flex">
         <Link
           to="/"
-          className="group flex items-center gap-2 text-sm font-bold tracking-tight"
+          className="group flex shrink-0 items-center gap-2 text-sm font-bold tracking-tight"
         >
           <img
             src="/urbanslu/logo.svg"
@@ -17,14 +17,16 @@ export function Nav() {
             className="h-9 w-auto"
           />
         </Link>
+
+        {/* AI bar — centered on desktop, compact pill on mobile */}
         <button
           onClick={() => commandBarEvents.emit()}
-          className="flex w-64 items-center justify-center gap-2 rounded-md border-2 border-transparent bg-clip-padding px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground [background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-lighter),var(--brand),var(--brand-light))_border-box] hover:[background:linear-gradient(var(--card),var(--card))_padding-box,linear-gradient(135deg,var(--brand-light),var(--brand),var(--brand-lighter))_border-box]"
+          className="hidden w-64 items-center justify-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 md:flex"
         >
-          <HugeiconsIcon icon={Search01Icon} size={14} strokeWidth={2} />
-          <span className="max-sm:hidden">Ask AI</span>
+          <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={2} />
+          <span>Ask AI</span>
           <kbd
-            className="rounded border border-border/60 bg-muted/60 px-1 py-px text-[0.55rem] leading-none max-sm:hidden"
+            className="rounded border border-primary/20 bg-primary/10 px-1 py-px text-[0.55rem] leading-none text-primary/70"
             suppressHydrationWarning
           >
             {typeof navigator !== 'undefined' &&
@@ -33,7 +35,15 @@ export function Nav() {
               : 'Ctrl+K'}
           </kbd>
         </button>
-        <nav className="flex items-center justify-end gap-1">
+        <button
+          onClick={() => commandBarEvents.emit()}
+          className="ml-auto flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[0.7rem] font-semibold text-primary transition-colors active:scale-95 md:hidden"
+        >
+          <HugeiconsIcon icon={SparklesIcon} size={13} strokeWidth={2.5} />
+          AI
+        </button>
+
+        <nav className="flex shrink-0 items-center justify-end gap-1">
           <Link
             to="/explore"
             className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground"

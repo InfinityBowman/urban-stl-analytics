@@ -68,7 +68,7 @@ export function ArpaAnalytics() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniKpi label="Total Spent" value={fmt(kpis.totalSpent)} />
         <MiniKpi label="Transactions" value={kpis.transactions.toLocaleString()} />
         <MiniKpi label="Projects" value={String(kpis.projects)} />

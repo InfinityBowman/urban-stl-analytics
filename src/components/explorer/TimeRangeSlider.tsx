@@ -88,7 +88,7 @@ export function TimeRangeSlider() {
 
   return (
     <div
-      className="absolute bottom-3 left-3 z-10 w-[min(400px,calc(100%-6rem))] rounded-xl border border-border/60 bg-background/90 px-3 py-1.5 shadow-lg backdrop-blur-md"
+      className="absolute bottom-3 left-3 z-10 w-[min(400px,calc(100%-6rem))] rounded-xl border border-border/60 bg-background/90 px-3 py-1.5 shadow-lg backdrop-blur-md max-md:hidden"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="mb-1 flex items-center justify-between">

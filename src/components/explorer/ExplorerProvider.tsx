@@ -42,6 +42,10 @@ function explorerReducer(
       return { ...state, selected: null, detailPanelOpen: false }
     case 'CLOSE_DETAIL':
       return { ...state, detailPanelOpen: false }
+    case 'OPEN_MOBILE_LAYER_DRAWER':
+      return { ...state, mobileLayerDrawerOpen: true }
+    case 'CLOSE_MOBILE_LAYER_DRAWER':
+      return { ...state, mobileLayerDrawerOpen: false }
     case 'TOGGLE_ANALYTICS':
       return { ...state, analyticsPanelExpanded: !state.analyticsPanelExpanded }
     case 'SET_ANALYTICS_TAB':

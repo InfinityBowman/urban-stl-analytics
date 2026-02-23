@@ -55,7 +55,7 @@ export function CrimeAnalytics() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniKpi label="Total" value={kpis.total.toLocaleString()} />
         <MiniKpi label="Per Day" value={String(kpis.perDay)} />
         <MiniKpi label="Felonies" value={kpis.felonies.toLocaleString()} />
