@@ -3,11 +3,13 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Megaphone01Icon,
   AlertDiamondIcon,
+  AlertCircleIcon,
   Bus01Icon,
   Building03Icon,
   Store01Icon,
   UserGroupIcon,
   DollarCircleIcon,
+  Home01Icon,
   Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
@@ -72,6 +74,20 @@ const LAYER_CONFIG: Array<{
     color: '#10b981',
     desc: 'Federal relief spending analytics',
     icon: DollarCircleIcon,
+  },
+  {
+    key: 'housing',
+    label: 'Housing',
+    color: '#14b8a6',
+    desc: 'Median rent & home values by neighborhood',
+    icon: Home01Icon,
+  },
+  {
+    key: 'affected',
+    label: 'Affected',
+    color: '#dc2626',
+    desc: 'Composite neighborhood distress scoring',
+    icon: AlertCircleIcon,
   },
 ]
 
@@ -267,7 +283,9 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
     (layerKey === 'foodAccess' && !data.foodDeserts) ||
     (layerKey === 'crime' && !data.crimeData) ||
     (layerKey === 'arpa' && !data.arpaData) ||
-    (layerKey === 'demographics' && !data.demographicsData)
+    (layerKey === 'demographics' && !data.demographicsData) ||
+    (layerKey === 'housing' && !data.housingData) ||
+    (layerKey === 'affected' && !data.affectedScores)
 
   if (isLoading) return <LoadingIndicator />
 
@@ -286,6 +304,10 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
       return <DemographicsFilters />
     case 'arpa':
       return <ArpaFilters />
+    case 'housing':
+      return <HousingFilters />
+    case 'affected':
+      return <AffectedFilters />
   }
 }
 
@@ -761,6 +783,32 @@ function ArpaFilters() {
     <div className="flex items-center gap-1.5 text-[0.62rem] text-foreground/50">
       <div className="h-1 w-1 rounded-full bg-emerald-500/60" />
       Analytics-only layer
+    </div>
+  )
+}
+
+function HousingFilters() {
+  const { state, dispatch } = useExplorer()
+
+  return (
+    <PillToggle
+      options={[
+        { value: 'rent', label: 'Median Rent' },
+        { value: 'value', label: 'Home Value' },
+      ]}
+      value={state.subToggles.housingMetric}
+      onChange={(v) =>
+        dispatch({ type: 'SET_SUB_TOGGLE', key: 'housingMetric', value: v })
+      }
+    />
+  )
+}
+
+function AffectedFilters() {
+  return (
+    <div className="flex items-center gap-1.5 text-[0.62rem] text-foreground/50">
+      <div className="h-1 w-1 rounded-full bg-red-500/60" />
+      Composite distress score
     </div>
   )
 }

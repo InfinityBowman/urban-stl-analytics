@@ -48,6 +48,16 @@ export function executeDataTool(
     case 'get_food_access':
       content = buildFoodAccess(data)
       break
+    case 'get_housing_data':
+      content = buildHousingData(args.neighborhood as string | undefined, data)
+      break
+    case 'get_affected_scores':
+      content = buildAffectedScores(
+        args.neighborhood as string | undefined,
+        Math.min(Number(args.limit) || 10, 79),
+        data,
+      )
+      break
     default:
       content = { error: `Unknown data tool: ${toolCall.name}` }
   }
@@ -156,6 +166,30 @@ function buildCitySummary(data: ExplorerData) {
     summary.foodAccess = 'still loading'
   }
 
+  if (data.housingData) {
+    summary.housing = {
+      acsYear: data.housingData.year,
+      cityMedianRent: data.housingData.cityMedianRent,
+      cityMedianHomeValue: data.housingData.cityMedianHomeValue,
+      neighborhoodCount: Object.keys(data.housingData.neighborhoods).length,
+    }
+  } else {
+    summary.housing = 'still loading'
+  }
+
+  if (data.affectedScores && data.affectedScores.length > 0) {
+    const scores = data.affectedScores
+    const avg = Math.round(scores.reduce((s, a) => s + a.composite, 0) / scores.length)
+    summary.affected = {
+      neighborhoodsScored: scores.length,
+      avgDistress: avg,
+      mostDistressed: { name: scores[0].name, score: scores[0].composite },
+      leastDistressed: { name: scores[scores.length - 1].name, score: scores[scores.length - 1].composite },
+    }
+  } else {
+    summary.affected = 'still loading'
+  }
+
   return summary
 }
 
@@ -231,6 +265,31 @@ function buildNeighborhoodDetail(name: string, data: ExplorerData) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([k, v]) => ({ category: k, count: v })),
+    }
+  }
+
+  // Add housing data if available
+  if (data.housingData?.neighborhoods[hoodKey]) {
+    const h = data.housingData.neighborhoods[hoodKey]
+    result.housing = {
+      medianRent: h.medianRent,
+      medianHomeValue: h.medianHomeValue,
+      tractCount: h.tractCount,
+    }
+  }
+
+  // Add affected score if available
+  if (data.affectedScores) {
+    const score = data.affectedScores.find((a) => a.nhdId === hoodKey)
+    if (score) {
+      result.affectedScore = {
+        composite: score.composite,
+        crimeScore: score.crimeScore,
+        vacancyScore: score.vacancyScore,
+        complaintScore: score.complaintScore,
+        foodScore: score.foodScore,
+        popDeclineScore: score.popDeclineScore,
+      }
     }
   }
 
@@ -312,6 +371,31 @@ function buildRankings(
           nhdNum: id,
           value: Math.round(demo.popChange10to20 * 10) / 10,
         })
+      }
+      break
+    }
+    case 'rent': {
+      if (!data.housingData) return { error: 'still loading' }
+      for (const [id, h] of Object.entries(data.housingData.neighborhoods)) {
+        if (h.medianRent != null) {
+          entries.push({ name: h.name, nhdNum: id, value: h.medianRent })
+        }
+      }
+      break
+    }
+    case 'homeValue': {
+      if (!data.housingData) return { error: 'still loading' }
+      for (const [id, h] of Object.entries(data.housingData.neighborhoods)) {
+        if (h.medianHomeValue != null) {
+          entries.push({ name: h.name, nhdNum: id, value: h.medianHomeValue })
+        }
+      }
+      break
+    }
+    case 'distress': {
+      if (!data.affectedScores) return { error: 'still loading' }
+      for (const s of data.affectedScores) {
+        entries.push({ name: s.name, nhdNum: s.nhdId, value: s.composite })
       }
       break
     }
@@ -464,4 +548,98 @@ function buildFoodAccess(data: ExplorerData) {
   }
 
   return result
+}
+
+function buildHousingData(neighborhood: string | undefined, data: ExplorerData) {
+  if (!data.housingData) return { error: 'still loading' }
+
+  const h = data.housingData
+  const result: Record<string, unknown> = {
+    acsYear: h.year,
+    cityMedianRent: h.cityMedianRent,
+    cityMedianHomeValue: h.cityMedianHomeValue,
+    neighborhoodCount: Object.keys(h.neighborhoods).length,
+  }
+
+  if (neighborhood && data.neighborhoods) {
+    const resolved = resolveNeighborhood(neighborhood, data.neighborhoods)
+    if (!resolved) return { error: `No neighborhood found matching "${neighborhood}"` }
+    const hoodKey = resolved.nhdNum.padStart(2, '0')
+    const nh = h.neighborhoods[hoodKey]
+    if (nh) {
+      result.neighborhood = {
+        name: nh.name,
+        nhdNum: hoodKey,
+        medianRent: nh.medianRent,
+        medianHomeValue: nh.medianHomeValue,
+        tractCount: nh.tractCount,
+      }
+    }
+  } else {
+    // Return top/bottom by rent
+    const byRent = Object.entries(h.neighborhoods)
+      .filter(([, v]) => v.medianRent != null)
+      .sort((a, b) => (b[1].medianRent ?? 0) - (a[1].medianRent ?? 0))
+    const top = Math.min(5, Math.floor(byRent.length / 2))
+    result.highestRent = byRent.slice(0, top).map(([id, v]) => ({
+      name: v.name, nhdNum: id, medianRent: v.medianRent,
+    }))
+    result.lowestRent = byRent.slice(-top).reverse().map(([id, v]) => ({
+      name: v.name, nhdNum: id, medianRent: v.medianRent,
+    }))
+  }
+
+  return result
+}
+
+function buildAffectedScores(
+  neighborhood: string | undefined,
+  limit: number,
+  data: ExplorerData,
+) {
+  if (!data.affectedScores || data.affectedScores.length === 0) {
+    return { error: 'still loading' }
+  }
+
+  const scores = data.affectedScores
+
+  if (neighborhood && data.neighborhoods) {
+    const resolved = resolveNeighborhood(neighborhood, data.neighborhoods)
+    if (!resolved) return { error: `No neighborhood found matching "${neighborhood}"` }
+    const score = scores.find((s) => s.nhdId === resolved.nhdNum.padStart(2, '0'))
+    if (!score) return { error: `No affected score for ${resolved.name}` }
+    const rank = scores.indexOf(score) + 1
+    return {
+      neighborhood: score.name,
+      nhdNum: score.nhdId,
+      rank,
+      totalNeighborhoods: scores.length,
+      composite: score.composite,
+      subScores: {
+        crime: score.crimeScore,
+        vacancy: score.vacancyScore,
+        complaints: score.complaintScore,
+        foodAccess: score.foodScore,
+        popDecline: score.popDeclineScore,
+      },
+    }
+  }
+
+  const avg = Math.round(scores.reduce((s, a) => s + a.composite, 0) / scores.length)
+  return {
+    avgDistress: avg,
+    totalNeighborhoods: scores.length,
+    aboveThreshold50: scores.filter((s) => s.composite >= 50).length,
+    rankings: scores.slice(0, limit).map((s, i) => ({
+      rank: i + 1,
+      name: s.name,
+      nhdNum: s.nhdId,
+      composite: s.composite,
+      crimeScore: s.crimeScore,
+      vacancyScore: s.vacancyScore,
+      complaintScore: s.complaintScore,
+      foodScore: s.foodScore,
+      popDeclineScore: s.popDeclineScore,
+    })),
+  }
 }

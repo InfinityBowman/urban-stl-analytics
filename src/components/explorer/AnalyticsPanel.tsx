@@ -9,6 +9,8 @@ import { ChartBuilder } from './analytics/ChartBuilder'
 import { CrimeAnalytics } from './analytics/CrimeAnalytics'
 import { ArpaAnalytics } from './analytics/ArpaAnalytics'
 import { DemographicsAnalytics } from './analytics/DemographicsAnalytics'
+import { HousingAnalytics } from './analytics/HousingAnalytics'
+import { AffectedAnalytics } from './analytics/AffectedAnalytics'
 import type { LayerToggles } from '@/lib/explorer-types'
 
 interface TabDef {
@@ -32,6 +34,8 @@ const LAYER_TABS: Array<{
   { key: 'vacancy', label: 'Vacancy Triage', color: 'text-amber-400', layer: 'vacancy', component: () => <VacancyAnalytics /> },
   { key: 'arpa', label: 'ARPA Funds', color: 'text-emerald-400', layer: 'arpa', component: () => <ArpaAnalytics /> },
   { key: 'demographics', label: 'Demographics', color: 'text-purple-400', layer: 'demographics', component: () => <DemographicsAnalytics /> },
+  { key: 'housing', label: 'Housing', color: 'text-teal-400', layer: 'housing', component: () => <HousingAnalytics /> },
+  { key: 'affected', label: 'Affected', color: 'text-red-400', layer: 'affected', component: () => <AffectedAnalytics /> },
 ]
 
 export function AnalyticsPanel() {

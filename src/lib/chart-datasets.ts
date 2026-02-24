@@ -554,6 +554,93 @@ export const DATASET_REGISTRY: DatasetDef[] = [
     },
   },
 
+  // Housing
+  {
+    key: 'housing-neighborhood',
+    label: 'By Neighborhood',
+    group: 'Housing',
+    description: 'Median rent and home values per neighborhood from Census ACS',
+    presets: [
+      {
+        name: 'Rent vs Home Value',
+        xAxisField: 'neighborhood',
+        series: [
+          { fieldKey: 'medianRent', chartType: 'bar' },
+          { fieldKey: 'medianHomeValue', chartType: 'line', yAxisId: 'right' },
+        ],
+      },
+      {
+        name: 'Rent Comparison',
+        xAxisField: 'neighborhood',
+        series: [{ fieldKey: 'medianRent', chartType: 'bar' }],
+      },
+    ],
+    fields: [
+      { key: 'neighborhood', label: 'Neighborhood', type: 'category' },
+      { key: 'medianRent', label: 'Median Rent ($)', type: 'number' },
+      { key: 'medianHomeValue', label: 'Median Home Value ($)', type: 'number' },
+      { key: 'tractCount', label: 'Census Tracts', type: 'number' },
+    ],
+    requiredLayers: ['housing'],
+    extract: (data) => {
+      if (!data.housingData) return null
+      return Object.entries(data.housingData.neighborhoods)
+        .filter(([, h]) => h.medianRent != null || h.medianHomeValue != null)
+        .map(([, h]) => ({
+          neighborhood: h.name,
+          medianRent: h.medianRent ?? 0,
+          medianHomeValue: h.medianHomeValue ?? 0,
+          tractCount: h.tractCount,
+        }))
+    },
+  },
+
+  // Affected Neighborhoods
+  {
+    key: 'affected-scores',
+    label: 'Distress Scores',
+    group: 'Affected',
+    description: 'Composite distress scores with sub-score breakdown by neighborhood',
+    presets: [
+      {
+        name: 'Distress Overview',
+        xAxisField: 'neighborhood',
+        series: [{ fieldKey: 'composite', chartType: 'bar' }],
+      },
+      {
+        name: 'Sub-Score Breakdown',
+        xAxisField: 'neighborhood',
+        series: [
+          { fieldKey: 'crimeScore', chartType: 'bar' },
+          { fieldKey: 'vacancyScore', chartType: 'bar' },
+          { fieldKey: 'complaintScore', chartType: 'bar' },
+        ],
+      },
+    ],
+    fields: [
+      { key: 'neighborhood', label: 'Neighborhood', type: 'category' },
+      { key: 'composite', label: 'Composite Score', type: 'number' },
+      { key: 'crimeScore', label: 'Crime Score', type: 'number' },
+      { key: 'vacancyScore', label: 'Vacancy Score', type: 'number' },
+      { key: 'complaintScore', label: 'Complaint Score', type: 'number' },
+      { key: 'foodScore', label: 'Food Access Score', type: 'number' },
+      { key: 'popDeclineScore', label: 'Pop Decline Score', type: 'number' },
+    ],
+    requiredLayers: ['affected'],
+    extract: (data) => {
+      if (!data.affectedScores) return null
+      return data.affectedScores.map((s) => ({
+        neighborhood: s.name,
+        composite: s.composite,
+        crimeScore: s.crimeScore,
+        vacancyScore: s.vacancyScore,
+        complaintScore: s.complaintScore,
+        foodScore: s.foodScore,
+        popDeclineScore: s.popDeclineScore,
+      }))
+    },
+  },
+
   // Food Access
   {
     key: 'food-desert-tracts',
@@ -612,6 +699,8 @@ export const GROUP_DESCRIPTIONS: Record<string, string> = {
   Crime: 'SLMPD reported crime incidents',
   'ARPA Funds': 'American Rescue Plan Act expenditures',
   Demographics: 'Census population and housing data',
+  Housing: 'Census ACS median rent and home values',
+  Affected: 'Composite neighborhood distress scores',
   'Food Access': 'Food desert and grocery access metrics',
 }
 

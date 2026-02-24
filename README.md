@@ -44,17 +44,35 @@ A fullscreen, map-centric dashboard with seven toggleable data layers, an AI com
 - **Neighborhood comparison** — Side-by-side comparison of metrics across neighborhoods.
 - **ChartBuilder** — User-configurable charts from underlying datasets with multi-series support, chart type toggles, and dual-axis.
 
-### Housing Prices (`/housing`)
-
-Placeholder — real housing data integration in progress.
-
-### Affected Areas (`/affected`)
-
-Placeholder — real neighborhood impact data integration in progress.
-
 ### Population (`/population`)
 
-Placeholder — real Census population data integration in progress.
+Census population data across 79 neighborhoods with three tabs:
+
+- **Overview** — KPIs (total pop, vacancy rate, growing/declining counts), top 10 by population bar chart, city-wide race breakdown
+- **Change 2010→2020** — Top 10 growing + declining neighborhoods, full sortable table with 2010/2020 pop and % change
+- **Demographics** — Race composition chart, housing units/occupancy KPIs, top neighborhoods by vacancy rate
+
+Uses `demographics.json` (existing pipeline dataset).
+
+### Housing Prices (`/housing`)
+
+Census ACS 5-Year housing estimates with a toggle between Median Rent and Median Home Value:
+
+- **KPIs** — City-wide median rent, median home value, neighborhood count
+- **Choropleth map** — Color-coded by selected metric (gray = no data)
+- **Top/bottom 10** — Bar charts of highest and lowest neighborhoods
+
+Requires `housing.json` from the data pipeline (needs `CENSUS_API_KEY`).
+
+### Affected Neighborhoods (`/affected`)
+
+Composite distress scoring (0–100) across five weighted factors using existing datasets:
+
+- **Ranked list** — All 79 neighborhoods sorted by distress score, expandable rows with per-factor score bars
+- **Choropleth map** — Green (low distress) to red (high distress)
+- **KPIs** — High distress count, moderate count, average score, food desert count
+
+Cross-dataset analysis using `demographics.json`, `crime.json`, `vacancies.json`, `csb_latest.json`, `grocery_stores.geojson`.
 
 ### About (`/about`)
 
@@ -98,6 +116,7 @@ Create a `.env` file (see `.env.example`):
 ```
 VITE_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 OPENROUTER_API_KEY=sk-or-...   # Optional: enables AI command bar
+CENSUS_API_KEY=your_key_here   # Optional: enables housing data pipeline (free at api.census.gov)
 ```
 
 ### Develop
@@ -146,9 +165,9 @@ src/
 │   ├── _app.tsx                  App layout (nav shell)
 │   ├── _app/
 │   │   ├── explore.tsx           Map Explorer
-│   │   ├── housing.tsx           Housing Prices (placeholder)
-│   │   ├── affected.tsx          Affected Neighborhoods (placeholder)
-│   │   ├── population.tsx        Population (placeholder)
+│   │   ├── housing.tsx           Housing Prices (ACS choropleth)
+│   │   ├── affected.tsx          Affected Neighborhoods (distress scoring)
+│   │   ├── population.tsx        Population Trends (census data)
 │   │   └── about.tsx             About page
 │   └── api/chat.ts              AI chat server endpoint
 ├── components/
@@ -169,6 +188,8 @@ src/
 │   │   │   ├── VacancyLayer.tsx
 │   │   │   ├── FoodAccessLayer.tsx
 │   │   │   ├── DemographicsLayer.tsx
+│   │   │   ├── HousingLayer.tsx
+│   │   │   ├── AffectedLayer.tsx
 │   │   │   └── StandaloneNeighborhoodLayer.tsx
 │   │   ├── detail/
 │   │   │   ├── NeighborhoodDetail.tsx      Composite score + cross-dataset
@@ -191,6 +212,18 @@ src/
 │   │   │       ├── ChartCanvas.tsx        Chart rendering
 │   │   │       ├── ChartControls.tsx      Chart config UI
 │   │   │       └── useChartBuilder.tsx    Chart state hook
+│   ├── population/
+│   │   ├── PopulationDashboard.tsx   3-tab census data dashboard
+│   │   ├── PopulationKpiGrid.tsx     KPI cards
+│   │   ├── PopulationChangeTable.tsx Sortable neighborhood table
+│   │   └── RaceBreakdownChart.tsx    City-wide race breakdown
+│   ├── housing/
+│   │   ├── HousingDashboard.tsx      KPI cards + bar charts
+│   │   └── HousingKpiCards.tsx       City-wide KPI cards
+│   ├── affected/
+│   │   ├── AffectedDashboard.tsx     KPI cards + ranked list
+│   │   ├── AffectedNeighborhoodRow.tsx Expandable score rows
+│   │   └── AffectedKpiCards.tsx      Summary KPI cards
 │   ├── landing/
 │   │   └── LandingPage.tsx       Splash / landing page
 │   ├── about/
@@ -212,6 +245,7 @@ src/
 │   ├── analysis.ts               Hotspot detection, weather correlation
 │   ├── equity.ts                 Haversine, equity gap scoring
 │   ├── scoring.ts                Vacancy triage scoring + best-use
+│   ├── affected-scoring.ts       Composite distress score computation
 │   ├── colors.ts                 Choropleth scales, score colors
 │   ├── chart-datasets.ts         ChartBuilder dataset registry
 │   ├── neighborhood-metrics.ts   Neighborhood metric calculations
@@ -240,7 +274,8 @@ public/
     ├── crime.json                SLMPD crime incidents
     ├── arpa.json                 ARPA fund expenditures
     ├── demographics.json         Census demographics by neighborhood
-    └── vacancies.json            Real vacant building data
+    ├── vacancies.json            Real vacant building data
+    └── housing.json              Census ACS median rent + home value
 python/
 ├── pyproject.toml                uv project config + dependencies
 ├── .python-version               Pins Python 3.12
@@ -272,6 +307,7 @@ python/
 | Crime Incidents         | [SLMPD](https://www.slmpd.org/crime_stats.shtml) NIBRS data       | Pre-processed JSON from CSV    |
 | ARPA Expenditures       | [City of STL Open Data](https://www.stlouis-mo.gov/)              | JSON API                       |
 | Census Demographics     | City of STL Planning Dept neighborhood census pages                | Scraped HTML → JSON            |
+| Housing (ACS)           | Census ACS 5-Year (B25064 + B25077) for FIPS 29510                | API → spatial join → JSON      |
 
 ## Algorithms
 
@@ -298,6 +334,18 @@ Per LILA census tract:
 - Up to 20 pts for service frequency
 - Up to 25 pts for grocery store proximity
 - 25 pts if a direct bus route connects the tract to a grocery store
+
+### Neighborhood Distress Score (0–100)
+
+Five weighted factors computed from cross-dataset analysis:
+
+| Factor           | Weight | Logic                                                    |
+| ---------------- | ------ | -------------------------------------------------------- |
+| Crime            | 25%    | Normalized crime incident total per neighborhood         |
+| Vacancy          | 25%    | Normalized vacant property count per neighborhood        |
+| 311 Complaints   | 20%    | Normalized complaint total per neighborhood              |
+| Food Access      | 15%    | Binary: no grocery store within 1.5 mi of centroid = 100 |
+| Pop Decline      | 15%    | Magnitude of 2010→2020 population decline, normalized    |
 
 ### 311 Hotspot Detection
 

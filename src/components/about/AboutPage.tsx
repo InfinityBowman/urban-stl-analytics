@@ -9,6 +9,8 @@ import {
   Store01Icon,
   UserGroupIcon,
   DollarCircleIcon,
+  Home01Icon,
+  AlertCircleIcon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons'
 
@@ -83,6 +85,26 @@ const DATASETS = [
     source: 'City of St. Louis Budget Division',
     coverage: '2021 - 2024',
   },
+  {
+    name: 'Housing Prices',
+    icon: Home01Icon,
+    color: '#14b8a6',
+    file: 'housing.json',
+    description:
+      'Median rent and home values from the American Community Survey 5-year estimates, aggregated to neighborhood boundaries.',
+    source: 'U.S. Census Bureau ACS',
+    coverage: '2019 - 2023',
+  },
+  {
+    name: 'Affected Neighborhoods',
+    icon: AlertCircleIcon,
+    color: '#dc2626',
+    file: '(computed from crime, vacancy, complaints, demographics, groceries)',
+    description:
+      'Composite distress scores derived from crime, vacancy, complaints, food access, and population decline data across all 79 neighborhoods.',
+    source: 'Derived composite',
+    coverage: 'Cross-dataset',
+  },
 ]
 
 const stagger = {
@@ -147,7 +169,7 @@ export function AboutPage() {
             fast client-side rendering.
           </p>
           <p>
-            The map explorer lets you toggle any combination of seven data
+            The map explorer lets you toggle any combination of nine data
             layers, click into individual neighborhoods for composite scoring,
             and use the analytics drawer for temporal patterns, category
             breakdowns, and cross-dataset correlations.

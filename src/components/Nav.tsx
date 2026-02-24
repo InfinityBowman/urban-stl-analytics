@@ -47,14 +47,35 @@ export function Nav() {
           <Link
             to="/explore"
             className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            activeProps={{ className: 'text-foreground' }}
+            activeProps={{ className: 'text-primary' }}
           >
             Explorer
           </Link>
           <Link
+            to="/population"
+            className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground max-md:hidden"
+            activeProps={{ className: 'text-primary' }}
+          >
+            Population
+          </Link>
+          <Link
+            to="/housing"
+            className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground max-md:hidden"
+            activeProps={{ className: 'text-primary' }}
+          >
+            Housing
+          </Link>
+          <Link
+            to="/affected"
+            className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground max-md:hidden"
+            activeProps={{ className: 'text-primary' }}
+          >
+            Affected
+          </Link>
+          <Link
             to="/about"
             className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            activeProps={{ className: 'text-foreground' }}
+            activeProps={{ className: 'text-primary' }}
           >
             About
           </Link>

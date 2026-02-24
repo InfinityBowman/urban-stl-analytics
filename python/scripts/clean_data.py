@@ -47,7 +47,18 @@ PYTHON_DIR = Path(__file__).resolve().parent.parent  # python/
 ROOT = PYTHON_DIR.parent  # repo root
 RAW_DIR = PYTHON_DIR / "data" / "raw"
 OUT_DIR = ROOT / "public" / "data"
+
+# Load .env from repo root
+_dotenv = ROOT / ".env"
+if _dotenv.exists():
+    for line in _dotenv.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip())
+
 YEAR = int(os.environ.get("DATA_YEAR", "2025"))
+ACS_YEAR = int(os.environ.get("ACS_YEAR", "2022"))  # ACS data lags ~2 years
 
 STL_COUNTY_FIPS = "29510"
 
@@ -1341,14 +1352,159 @@ def process_vacancies() -> None:
     log(f"Wrote {out_path.name} ({len(properties)} properties, {out_path.stat().st_size // 1024}KB)")
 
 
+# ── 10. Census ACS Housing Data ──────────────────────────────────────────────
+
+def process_housing() -> None:
+    """Spatial-join ACS tract-level housing data to neighborhoods, output housing.json."""
+    import geopandas as gpd
+
+    acs_path = RAW_DIR / "housing_acs.json"
+    if not acs_path.exists():
+        log("No housing_acs.json found — skipping (set CENSUS_API_KEY and run fetch_raw.py)")
+        return
+
+    nhd_path = OUT_DIR / "neighborhoods.geojson"
+    if not nhd_path.exists():
+        log("neighborhoods.geojson not found — run process_neighborhoods first")
+        return
+
+    tiger_dir = RAW_DIR / "tiger_tracts"
+    shp_files = list(tiger_dir.rglob("*.shp")) if tiger_dir.exists() else []
+    if not shp_files:
+        log("No TIGER tract shapefile found — skipping housing")
+        return
+
+    # Load ACS data (Census API returns header row + data rows)
+    with open(acs_path, "r") as f:
+        raw = json.load(f)
+
+    headers = raw[0]
+    rows = raw[1:]
+    log(f"Loaded {len(rows)} ACS tract records")
+
+    # Build GEOID -> {rent, value} lookup
+    # GEOID = state + county + tract
+    name_idx = headers.index("NAME")
+    rent_idx = headers.index("B25064_001E")
+    value_idx = headers.index("B25077_001E")
+    state_idx = headers.index("state")
+    county_idx = headers.index("county")
+    tract_idx = headers.index("tract")
+
+    tract_data = {}
+    rents = []
+    values = []
+    for row in rows:
+        geoid = row[state_idx] + row[county_idx] + row[tract_idx]
+        rent = safe_int(row[rent_idx]) if row[rent_idx] not in (None, "", "-666666666") else None
+        value = safe_int(row[value_idx]) if row[value_idx] not in (None, "", "-666666666") else None
+        tract_data[geoid] = {"rent": rent, "value": value}
+        if rent and rent > 0:
+            rents.append(rent)
+        if value and value > 0:
+            values.append(value)
+
+    city_median_rent = sorted(rents)[len(rents) // 2] if rents else None
+    city_median_value = sorted(values)[len(values) // 2] if values else None
+    log(f"City median rent: ${city_median_rent}, home value: ${city_median_value}")
+
+    # Load TIGER tracts as GeoDataFrame
+    log("Loading TIGER tracts for spatial join...")
+    tracts_gdf = gpd.read_file(shp_files[0])
+    tracts_gdf = tracts_gdf[tracts_gdf["GEOID"].str.startswith(STL_COUNTY_FIPS)]
+    if tracts_gdf.crs and tracts_gdf.crs != "EPSG:4326":
+        tracts_gdf = tracts_gdf.to_crs(epsg=4326)
+
+    # Add ACS values to tracts
+    tracts_gdf["rent"] = tracts_gdf["GEOID"].map(lambda g: (tract_data.get(g, {}).get("rent")))
+    tracts_gdf["home_value"] = tracts_gdf["GEOID"].map(lambda g: (tract_data.get(g, {}).get("value")))
+
+    # Load neighborhoods
+    nhd_gdf = gpd.read_file(nhd_path)
+    if nhd_gdf.crs and nhd_gdf.crs != "EPSG:4326":
+        nhd_gdf = nhd_gdf.to_crs(epsg=4326)
+
+    # Spatial join: assign each tract to the neighborhood it overlaps most
+    joined = gpd.sjoin(tracts_gdf, nhd_gdf, how="left", predicate="intersects")
+    log(f"Spatial join: {len(joined)} tract-neighborhood matches")
+
+    # Aggregate per neighborhood
+    neighborhoods = {}
+    for nhd_num in nhd_gdf["NHD_NUM"].unique():
+        nhd_id = str(int(nhd_num)).zfill(2)
+        nhd_row = nhd_gdf[nhd_gdf["NHD_NUM"] == nhd_num].iloc[0]
+        nhd_name = nhd_row.get("NHD_NAME", f"Neighborhood {nhd_id}")
+
+        matched = joined[joined["NHD_NUM"] == nhd_num]
+        tract_count = len(matched)
+
+        rent_vals = [r for r in matched["rent"].dropna() if r > 0]
+        value_vals = [v for v in matched["home_value"].dropna() if v > 0]
+
+        avg_rent = round(sum(rent_vals) / len(rent_vals)) if rent_vals else None
+        avg_value = round(sum(value_vals) / len(value_vals)) if value_vals else None
+
+        neighborhoods[nhd_id] = {
+            "name": nhd_name,
+            "medianRent": avg_rent,
+            "medianHomeValue": avg_value,
+            "tractCount": tract_count,
+        }
+
+    housing = {
+        "year": ACS_YEAR,
+        "cityMedianRent": city_median_rent,
+        "cityMedianHomeValue": city_median_value,
+        "neighborhoods": neighborhoods,
+    }
+
+    out_path = OUT_DIR / "housing.json"
+    with open(out_path, "w") as f:
+        json.dump(housing, f, separators=(",", ":"))
+    log(f"Wrote {out_path.name} ({len(neighborhoods)} neighborhoods, {out_path.stat().st_size // 1024}KB)")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+STEPS = {
+    "neighborhoods": ("Neighborhoods", process_neighborhoods),
+    "gtfs": ("GTFS transit", process_gtfs),
+    "food": ("Food deserts", process_food_deserts),
+    "grocery": ("Grocery stores", write_grocery_stores),
+    "csb": ("CSB 311 data", process_csb),
+    "crime": ("Crime data", process_crime),
+    "arpa": ("ARPA funds", process_arpa),
+    "demographics": ("Demographics", process_demographics),
+    "vacancies": ("Vacancy data", process_vacancies),
+    "housing": ("Housing (ACS)", process_housing),
+}
+
+
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Process raw data into frontend JSON")
+    parser.add_argument(
+        "--only",
+        type=str,
+        help=f"Process only this step. Choices: {', '.join(STEPS.keys())}",
+    )
+    parser.add_argument("--list", action="store_true", help="List available steps and exit")
+    args = parser.parse_args()
+
+    if args.list:
+        print("Available steps:")
+        for key, (name, _) in STEPS.items():
+            print(f"  {key:<20} {name}")
+        return
+
     print("=" * 60)
     print("  STL Urban Analytics — Data Cleaner")
     print(f"  Raw input:  {RAW_DIR}")
     print(f"  Output:     {OUT_DIR}")
     print(f"  Target year: {YEAR}")
+    if args.only:
+        print(f"  Only: {args.only}")
     print("=" * 60)
 
     if not RAW_DIR.exists():
@@ -1356,19 +1512,13 @@ def main():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    steps = [
-        ("Neighborhoods", process_neighborhoods),
-        ("GTFS transit", process_gtfs),
-        ("Food deserts", process_food_deserts),
-        ("Grocery stores", write_grocery_stores),
-        ("CSB 311 data", process_csb),
-        ("Crime data", process_crime),
-        ("ARPA funds", process_arpa),
-        ("Demographics", process_demographics),
-        ("Vacancy data", process_vacancies),
-    ]
+    if args.only:
+        if args.only not in STEPS:
+            sys.exit(f"Unknown step '{args.only}'. Use --list to see options.")
 
-    for name, fn in steps:
+    for key, (name, fn) in STEPS.items():
+        if args.only and args.only != key:
+            continue
         try:
             print(f"\n── {name} ──")
             fn()

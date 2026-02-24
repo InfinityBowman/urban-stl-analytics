@@ -8,6 +8,8 @@ import { VacancyLayer } from './layers/VacancyLayer'
 import { FoodAccessLayer } from './layers/FoodAccessLayer'
 import { CrimeLayer } from './layers/CrimeLayer'
 import { DemographicsLayer } from './layers/DemographicsLayer'
+import { HousingLayer } from './layers/HousingLayer'
+import { AffectedLayer } from './layers/AffectedLayer'
 import { TimeRangeSlider } from './TimeRangeSlider'
 import { MapProvider } from '@/components/map/MapProvider'
 import {
@@ -22,6 +24,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
+  AFFECTED_COLORS,
   CHORO_COLORS,
   CRIME_COLORS,
   DEMO_COLORS,
@@ -248,6 +251,13 @@ export function ExplorerMap() {
     return titles[state.subToggles.demographicsMetric] ?? 'Demographics'
   }, [state.layers.demographics, state.subToggles.demographicsMetric])
 
+  const housingTitle = useMemo(() => {
+    if (!state.layers.housing) return ''
+    return state.subToggles.housingMetric === 'rent'
+      ? 'Median Rent ($)'
+      : 'Median Home Value ($)'
+  }, [state.layers.housing, state.subToggles.housingMetric])
+
   const vacancyBreaks = useMemo(() => {
     if (!state.layers.vacancy || !data.vacancyData) return percentileBreaks([])
     return percentileBreaks(data.vacancyData.map((p) => p.triageScore))
@@ -259,7 +269,9 @@ export function ExplorerMap() {
     state.layers.demographics ||
     state.layers.vacancy ||
     state.layers.foodAccess ||
-    state.layers.transit
+    state.layers.transit ||
+    state.layers.housing ||
+    state.layers.affected
 
   return (
     <MapProvider
@@ -275,6 +287,8 @@ export function ExplorerMap() {
       {state.layers.vacancy && <VacancyLayer />}
       {state.layers.foodAccess && <FoodAccessLayer />}
       {state.layers.demographics && <DemographicsLayer />}
+      {state.layers.housing && <HousingLayer />}
+      {state.layers.affected && <AffectedLayer />}
 
       {hasLegend && (
         <MapLegend>
@@ -415,6 +429,12 @@ export function ExplorerMap() {
                 ]}
               />
             </>
+          )}
+          {state.layers.housing && (
+            <GradientSection title={housingTitle} colors={CHORO_COLORS} />
+          )}
+          {state.layers.affected && (
+            <GradientSection title="Distress Score" colors={AFFECTED_COLORS} />
           )}
         </MapLegend>
       )}

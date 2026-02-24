@@ -12,7 +12,9 @@
     "check": "prettier --write . && eslint --fix",
     "deploy": "vite build && wrangler deploy",
     "data:fetch": "cd python && uv run python scripts/fetch_raw.py",
+    "data:fetch:only": "cd python && uv run python scripts/fetch_raw.py --only",
     "data:clean": "cd python && uv run python scripts/clean_data.py",
+    "data:clean:only": "cd python && uv run python scripts/clean_data.py --only",
     "data:sync": "cd python && uv sync",
     "data:pipeline": "cd python && uv sync && uv run python scripts/fetch_raw.py && uv run python scripts/clean_data.py"
   },

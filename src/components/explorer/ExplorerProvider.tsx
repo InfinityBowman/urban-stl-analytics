@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
@@ -15,6 +16,7 @@ import type {
   LayerToggles,
 } from '@/lib/explorer-types'
 import { initialExplorerState } from '@/lib/explorer-types'
+import { computeAffectedScores } from '@/lib/affected-scoring'
 
 // ── Reducer ────────────────────────────────────────────────
 
@@ -134,6 +136,8 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     crimeData: null,
     arpaData: null,
     demographicsData: null,
+    housingData: null,
+    affectedScores: null,
   })
 
   // Track which datasets have been fetched to avoid double-fetch
@@ -273,6 +277,27 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
           })
           .catch(() => markFailed('demographics'))
         break
+
+      case 'housing':
+        fetch('/data/housing.json')
+          .then((r) => {
+            if (!r.ok) throw new Error('not found')
+            return r.json()
+          })
+          .then((housingData) => {
+            setData((prev) => ({ ...prev, housingData }))
+          })
+          .catch(() => markFailed('housing'))
+        break
+
+      case 'affected':
+        // Affected scores are computed from already-loaded data —
+        // ensure all dependencies are fetched first.
+        loadLayerData('crime')
+        loadLayerData('vacancy')
+        loadLayerData('complaints')
+        loadLayerData('demographics')
+        break
     }
   }, [])
 
@@ -287,6 +312,7 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     loadLayerData('foodAccess')
     loadLayerData('arpa')
     loadLayerData('demographics')
+    loadLayerData('housing')
   }, [loadLayerData])
 
   // Trigger lazy loads when layers are toggled on
@@ -323,9 +349,42 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     }
   }, [state.compareNeighborhoodA, state.compareNeighborhoodB, loadLayerData])
 
+  // Compute affected scores from already-loaded datasets
+  const affectedScores = useMemo(() => {
+    if (
+      !data.demographicsData ||
+      !data.crimeData ||
+      !data.vacancyData ||
+      !data.csbData ||
+      !data.neighborhoods
+    )
+      return null
+    return computeAffectedScores({
+      demographics: data.demographicsData,
+      crime: data.crimeData,
+      vacancies: data.vacancyData,
+      complaints: data.csbData,
+      neighborhoods: data.neighborhoods,
+      groceryStores: data.groceryStores ?? undefined,
+    })
+  }, [
+    data.demographicsData,
+    data.crimeData,
+    data.vacancyData,
+    data.csbData,
+    data.neighborhoods,
+    data.groceryStores,
+  ])
+
+  // Merge computed affected scores into data context
+  const enrichedData = useMemo<ExplorerData>(
+    () => ({ ...data, affectedScores }),
+    [data, affectedScores],
+  )
+
   return (
     <ExplorerContext.Provider value={{ state, dispatch, loadLayerData }}>
-      <DataContext.Provider value={data}>
+      <DataContext.Provider value={enrichedData}>
         <FailedDatasetsContext.Provider value={failedDatasets}>
           {children}
         </FailedDatasetsContext.Provider>

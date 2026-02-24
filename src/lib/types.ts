@@ -201,3 +201,32 @@ export interface NeighborhoodDemographics {
   }
   popChange10to20: number
 }
+
+// ── Housing (Census ACS) ─────────────────────────────────
+
+export interface NeighborhoodHousing {
+  name: string
+  medianRent: number | null
+  medianHomeValue: number | null
+  tractCount: number
+}
+
+export interface HousingData {
+  year: number
+  cityMedianRent: number | null
+  cityMedianHomeValue: number | null
+  neighborhoods: Record<string, NeighborhoodHousing>
+}
+
+// ── Affected Neighborhoods ───────────────────────────────
+
+export interface AffectedScore {
+  nhdId: string
+  name: string
+  composite: number
+  crimeScore: number
+  vacancyScore: number
+  complaintScore: number
+  foodScore: number
+  popDeclineScore: number
+}

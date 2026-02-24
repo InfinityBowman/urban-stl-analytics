@@ -38,6 +38,8 @@ function friendlyLabel(value: string): string {
   if (value === 'population') return 'Population'
   if (value === 'vacancyRate') return 'Vacancy Rate'
   if (value === 'popChange') return 'Pop Change'
+  if (value === 'rent') return 'Median Rent'
+  if (value === 'value') return 'Home Value'
   // Title-case raw strings like "STEALING - MOTOR VEHICLE/..."
   return value
     .toLowerCase()
@@ -140,6 +142,9 @@ export function executeToolCall(
         ? Object.keys(data.arpaData.categoryBreakdown)
         : []
       resolveCategory('arpaCategory', 'arpaCategory', arpaCategories, 'arpa', 'ARPA filter')
+
+      // Housing
+      setEnum('housingMetric', 'housingMetric', ['rent', 'value'], 'housing', 'Housing')
 
       return {
         description: descriptions.length ? descriptions.join(', ') : '',

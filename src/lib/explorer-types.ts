@@ -1,9 +1,11 @@
 import type {
+  AffectedScore,
   ArpaData,
   CrimeData,
   CSBData,
   FoodDesertProperties,
   GeoJSONCollection,
+  HousingData,
   NeighborhoodDemographics,
   NeighborhoodProperties,
   StopStats,
@@ -31,6 +33,8 @@ export interface LayerToggles {
   crime: boolean
   arpa: boolean
   demographics: boolean
+  housing: boolean
+  affected: boolean
 }
 
 export interface SubToggles {
@@ -53,6 +57,7 @@ export interface SubToggles {
   timeRangeEnd: string
   arpaCategory: string
   demographicsMetric: 'population' | 'vacancyRate' | 'popChange'
+  housingMetric: 'rent' | 'value'
 }
 
 export type MapStyle = 'light' | 'dark' | 'satellite' | 'streets'
@@ -110,6 +115,8 @@ export interface ExplorerData {
   crimeData: CrimeData | null
   arpaData: ArpaData | null
   demographicsData: Record<string, NeighborhoodDemographics> | null
+  housingData: HousingData | null
+  affectedScores: AffectedScore[] | null
 }
 
 // ── Initial State ──────────────────────────────────────────
@@ -123,6 +130,8 @@ export const initialExplorerState: ExplorerState = {
     crime: false,
     arpa: false,
     demographics: false,
+    housing: false,
+    affected: false,
   },
   subToggles: {
     complaintsMode: 'choropleth',
@@ -144,6 +153,7 @@ export const initialExplorerState: ExplorerState = {
     timeRangeEnd: '',
     arpaCategory: 'all',
     demographicsMetric: 'population',
+    housingMetric: 'rent',
   },
   selected: null,
   detailPanelOpen: false,

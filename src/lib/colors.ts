@@ -78,6 +78,19 @@ export const DEMO_COLORS = [
   '#a855f7',
 ]
 
+// Affected / distress diverging scale — green (low) to red (high), 7 stops
+export const AFFECTED_COLORS = [
+  '#1a9641',
+  '#a6d96a',
+  '#ffffbf',
+  '#fdae61',
+  '#f46d43',
+  '#d73027',
+  '#a50026',
+]
+
+export const AFFECTED_BREAKS = [0, 15, 30, 45, 60, 75, 90]
+
 // Vacancy triage colors — low (red) to high (green), 5 stops
 export const VACANCY_COLORS = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']
 
