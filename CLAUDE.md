@@ -66,7 +66,7 @@ The data pipeline is split into two scripts: `python/scripts/fetch_raw.py` downl
 - `src/components/explorer/` — Core app: `MapExplorer.tsx` (CSS grid layout), `ExplorerProvider.tsx` (state + data), `ExplorerMap.tsx` (Mapbox canvas + click handler), `LayerPanel.tsx` (left rail), `DetailPanel.tsx` (right rail), `AnalyticsPanel.tsx` (bottom drawer), `CommandBar.tsx` (AI chat), `TimeRangeSlider.tsx` (temporal filter)
 - `src/components/explorer/layers/` — Map layers: `NeighborhoodBaseLayer`, `ComplaintsLayer`, `CrimeLayer`, `TransitLayer`, `VacancyLayer`, `FoodAccessLayer`, `DemographicsLayer`, `HousingLayer`, `AffectedLayer`, `StandaloneNeighborhoodLayer`
 - `src/components/explorer/detail/` — Entity detail views: `NeighborhoodDetail`, `NeighborhoodComparePanel`, `VacancyDetail`, `StopDetail`, `GroceryDetail`, `FoodDesertDetail`, `useNeighborhoodMetrics` hook
-- `src/components/explorer/analytics/` — Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `NeighborhoodAnalytics`, `MiniKpi`, `chart-builder/` (ChartCanvas, ChartControls, useChartBuilder)
+- `src/components/explorer/analytics/` — Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `HousingAnalytics`, `AffectedAnalytics`, `NeighborhoodAnalytics`, `MiniKpi`, `ChartBuilder`, `chart-builder/` (ChartCanvas, ChartControls, useChartBuilder)
 - `src/components/population/` — Population page: `PopulationDashboard` (3-tab layout), `PopulationKpiGrid`, `PopulationChangeTable`, `RaceBreakdownChart`
 - `src/components/housing/` — Housing page: `HousingDashboard` (KPI cards + bar charts), `HousingKpiCards`
 - `src/components/affected/` — Affected page: `AffectedDashboard` (KPI cards + ranked list), `AffectedNeighborhoodRow`, `AffectedKpiCards`
@@ -80,7 +80,7 @@ The data pipeline is split into two scripts: `python/scripts/fetch_raw.py` downl
 
 ### Map Setup
 
-Maps use Mapbox GL via `react-map-gl`. The shared wrapper is `MapProvider` centered on STL (38.635, -90.245, zoom 11.5) with light-v11 style. Layers are rendered using `<Source>` and `<Layer>` components. Click handling uses `queryRenderedFeatures` with priority ordering (vacancy > stops > grocery > food desert > neighborhood).
+Maps use Mapbox GL via `react-map-gl`. The shared wrapper is `MapProvider` centered on STL (38.635, -90.245, zoom 11.5) with switchable styles (streets, light, dark, satellite — default: streets-v12). Layers are rendered using `<Source>` and `<Layer>` components. Click handling uses `queryRenderedFeatures` with priority ordering (vacancy > stops > grocery > food desert > neighborhood).
 
 ## Documentation
 

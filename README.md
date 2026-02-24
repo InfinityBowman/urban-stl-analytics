@@ -12,15 +12,15 @@ Splash page introducing the platform with navigation to the main dashboards.
 
 ### Map Explorer (`/explore`)
 
-A fullscreen, map-centric dashboard with seven toggleable data layers, an AI command bar, and integrated analytics.
+A fullscreen, map-centric dashboard with eight toggleable data layers, an AI command bar, and integrated analytics.
 
 #### Layout
 
 - **Layer Panel** (left rail) — Toggle layers on/off with contextual sub-filters (choropleth/heatmap mode, category pills, transit sub-layers, vacancy dropdowns + score slider, food desert/grocery toggles)
-- **Map** (center) — Mapbox GL (light-v11) with click-to-select on any entity
+- **Map** (center) — Mapbox GL with switchable styles (streets, light, dark, satellite) and click-to-select on any entity
 - **Detail Panel** (right rail) — Opens on click with entity-specific detail views, neighborhood comparison
 - **Analytics Panel** (bottom drawer) — Collapsible/resizable analytics with KPI chips, per-layer analytics modules, cross-dataset neighborhood view, and a ChartBuilder
-- **Command Bar** (`Cmd+K` / `Ctrl+K`) — AI-powered natural language interface for querying data, toggling layers, and generating charts
+- **Command Bar** (`Cmd+K` / `Ctrl+K`) — AI-powered natural language interface for querying data, toggling layers, configuring filters (transit sub-layers, vacancy filters, food access toggles, time range), switching map styles, comparing neighborhoods, opening analytics tabs, and generating charts
 
 #### Data Layers
 
@@ -35,6 +35,10 @@ A fullscreen, map-centric dashboard with seven toggleable data layers, an AI com
 **Crime** — SLMPD crime incidents as choropleth (by neighborhood count) or heatmap (individual points). Category filtering by offense type. Analytics: daily volume + 7-day MA, top offenses, hourly/weekday distribution, felony and firearm counts.
 
 **Demographics** — Census data choropleth by population, vacancy rate, or population change (2010-2020). Analytics: city-wide KPIs, most populated neighborhoods, population change chart.
+
+**Housing** — Census ACS choropleth by median rent or home value. Analytics: city-wide medians, top/bottom neighborhoods by metric.
+
+**Affected** — Composite distress score choropleth (green = low, red = high). Analytics: ranked neighborhood list with per-factor breakdowns.
 
 **ARPA Funds** — Analytics-only layer (no map visualization). Monthly spending + cumulative line, category breakdown, top vendors and projects lists.
 
@@ -156,143 +160,19 @@ uv run jupyter lab                     # Launch Jupyter for exploration notebook
 
 ## Project Structure
 
-```
-src/
-├── routes/
-│   ├── __root.tsx                Root layout
-│   ├── _bare.tsx                 Bare layout (no nav)
-│   ├── _bare/index.tsx           Landing page
-│   ├── _app.tsx                  App layout (nav shell)
-│   ├── _app/
-│   │   ├── explore.tsx           Map Explorer
-│   │   ├── housing.tsx           Housing Prices (ACS choropleth)
-│   │   ├── affected.tsx          Affected Neighborhoods (distress scoring)
-│   │   ├── population.tsx        Population Trends (census data)
-│   │   └── about.tsx             About page
-│   └── api/chat.ts              AI chat server endpoint
-├── components/
-│   ├── explorer/
-│   │   ├── MapExplorer.tsx       Top-level CSS grid layout
-│   │   ├── ExplorerProvider.tsx  State (useReducer) + data fetching
-│   │   ├── ExplorerMap.tsx       Mapbox canvas + click handler
-│   │   ├── LayerPanel.tsx        Left rail: layer toggles + sub-filters
-│   │   ├── DetailPanel.tsx       Right rail: entity detail dispatch
-│   │   ├── AnalyticsPanel.tsx    Bottom drawer: collapsible analytics
-│   │   ├── CommandBar.tsx        AI chat overlay (Cmd+K)
-│   │   ├── TimeRangeSlider.tsx   Temporal data filtering
-│   │   ├── layers/
-│   │   │   ├── NeighborhoodBaseLayer.tsx
-│   │   │   ├── ComplaintsLayer.tsx
-│   │   │   ├── CrimeLayer.tsx
-│   │   │   ├── TransitLayer.tsx
-│   │   │   ├── VacancyLayer.tsx
-│   │   │   ├── FoodAccessLayer.tsx
-│   │   │   ├── DemographicsLayer.tsx
-│   │   │   ├── HousingLayer.tsx
-│   │   │   ├── AffectedLayer.tsx
-│   │   │   └── StandaloneNeighborhoodLayer.tsx
-│   │   ├── detail/
-│   │   │   ├── NeighborhoodDetail.tsx      Composite score + cross-dataset
-│   │   │   ├── NeighborhoodComparePanel.tsx Neighborhood comparison
-│   │   │   ├── useNeighborhoodMetrics.ts   Metrics computation hook
-│   │   │   ├── VacancyDetail.tsx           Triage score breakdown
-│   │   │   ├── StopDetail.tsx              Stop info + routes
-│   │   │   ├── GroceryDetail.tsx           Store + nearest desert
-│   │   │   └── FoodDesertDetail.tsx        Demographics + equity score
-│   │   ├── analytics/
-│   │   │   ├── ComplaintsAnalytics.tsx     311 charts + KPIs
-│   │   │   ├── CrimeAnalytics.tsx         Crime charts + KPIs
-│   │   │   ├── TransitAnalytics.tsx       Equity gap list
-│   │   │   ├── VacancyAnalytics.tsx       Score distribution
-│   │   │   ├── ArpaAnalytics.tsx          ARPA spending charts
-│   │   │   ├── DemographicsAnalytics.tsx  Census data charts
-│   │   │   ├── NeighborhoodAnalytics.tsx  Cross-dataset view
-│   │   │   ├── MiniKpi.tsx                Compact KPI display
-│   │   │   └── chart-builder/
-│   │   │       ├── ChartCanvas.tsx        Chart rendering
-│   │   │       ├── ChartControls.tsx      Chart config UI
-│   │   │       └── useChartBuilder.tsx    Chart state hook
-│   ├── population/
-│   │   ├── PopulationDashboard.tsx   3-tab census data dashboard
-│   │   ├── PopulationKpiGrid.tsx     KPI cards
-│   │   ├── PopulationChangeTable.tsx Sortable neighborhood table
-│   │   └── RaceBreakdownChart.tsx    City-wide race breakdown
-│   ├── housing/
-│   │   ├── HousingDashboard.tsx      KPI cards + bar charts
-│   │   └── HousingKpiCards.tsx       City-wide KPI cards
-│   ├── affected/
-│   │   ├── AffectedDashboard.tsx     KPI cards + ranked list
-│   │   ├── AffectedNeighborhoodRow.tsx Expandable score rows
-│   │   └── AffectedKpiCards.tsx      Summary KPI cards
-│   ├── landing/
-│   │   └── LandingPage.tsx       Splash / landing page
-│   ├── about/
-│   │   └── AboutPage.tsx         About / methodology
-│   ├── map/
-│   │   ├── MapProvider.tsx       Shared Mapbox GL wrapper (light-v11)
-│   │   └── MapLegend.tsx         Choropleth / gradient legend
-│   ├── charts/
-│   │   ├── TimeSeriesChart.tsx   Bar + line combo chart
-│   │   ├── CategoryBarChart.tsx  Horizontal / vertical bar chart
-│   │   ├── HourlyChart.tsx       24-hour distribution
-│   │   ├── WeekdayChart.tsx      Day-of-week distribution
-│   │   └── WeatherInsights.tsx   Weather correlation panel
-│   ├── ui/                       shadcn components
-│   └── Nav.tsx                   Top navigation bar
-├── lib/
-│   ├── types.ts                  Domain interfaces
-│   ├── explorer-types.ts         State, actions, data context types
-│   ├── analysis.ts               Hotspot detection, weather correlation
-│   ├── equity.ts                 Haversine, equity gap scoring
-│   ├── scoring.ts                Vacancy triage scoring + best-use
-│   ├── affected-scoring.ts       Composite distress score computation
-│   ├── colors.ts                 Choropleth scales, score colors
-│   ├── chart-datasets.ts         ChartBuilder dataset registry
-│   ├── neighborhood-metrics.ts   Neighborhood metric calculations
-│   ├── utils.ts                  cn() helper
-│   └── ai/
-│       ├── system-prompt.ts      AI system prompt construction
-│       ├── tools.ts              AI tool definitions
-│       ├── use-chat.ts           Chat hook (streaming + tool calls)
-│       ├── action-executor.ts    Executes AI-generated map actions
-│       ├── data-executor.ts      Executes AI data queries
-│       ├── kpi-snapshot.ts       Builds KPI context for AI
-│       ├── neighborhood-resolver.ts Resolves neighborhood queries
-│       └── command-bar-events.ts Event bus for command bar toggle
-public/
-└── data/
-    ├── csb_latest.json           311 complaints aggregated (1.6 MB)
-    ├── csb_2025.json             2025 311 complaints
-    ├── trends.json               Year-over-year + weather data (24 KB)
-    ├── neighborhoods.geojson     79 neighborhood polygons (184 KB)
-    ├── stops.geojson             Metro Transit stops (872 KB)
-    ├── shapes.geojson            Route line geometries (620 KB)
-    ├── routes.json               Bus + rail route metadata (8 KB)
-    ├── stop_stats.json           Service frequency per stop (232 KB)
-    ├── food_deserts.geojson      LILA census tracts (16 KB)
-    ├── grocery_stores.geojson    Grocery store locations (4 KB)
-    ├── crime.json                SLMPD crime incidents
-    ├── arpa.json                 ARPA fund expenditures
-    ├── demographics.json         Census demographics by neighborhood
-    ├── vacancies.json            Real vacant building data
-    └── housing.json              Census ACS median rent + home value
-python/
-├── pyproject.toml                uv project config + dependencies
-├── .python-version               Pins Python 3.12
-├── scripts/
-│   ├── fetch_raw.py              Download raw datasets → data/raw/
-│   └── clean_data.py             Process raw data → public/data/
-├── data/raw/                     Raw downloads (gitignored)
-├── notebooks/
-│   ├── raw_data.ipynb            Interactive data exploration
-│   ├── exploration.ipynb         Data exploration notebook
-│   └── ml.ipynb                  Machine learning notebook
-└── training/
-    ├── ols.py                    OLS regression training script
-    ├── model2_codebook.json      Model variable codebook
-    ├── crosssectional_*.csv      Cross-sectional train/test data
-    └── panel_*.csv               Panel train/test/full data
-```
+| Directory | Purpose |
+| --- | --- |
+| `src/routes/` | File-based routes (TanStack Router): landing, explore, housing, affected, population, about, API |
+| `src/components/explorer/` | Map Explorer: layout, state provider, map canvas, layer/detail/analytics panels, AI command bar |
+| `src/components/explorer/layers/` | Per-dataset map layers (complaints, crime, transit, vacancy, food access, demographics, housing, affected) |
+| `src/components/explorer/detail/` | Entity detail views (neighborhood, vacancy, stop, grocery, food desert) + comparison panel |
+| `src/components/explorer/analytics/` | Per-layer analytics modules, chart builder, KPI components |
+| `src/components/{population,housing,affected}/` | Standalone page dashboards |
+| `src/components/{map,charts,ui}/` | Shared map wrapper, reusable chart components, shadcn/ui primitives |
+| `src/lib/` | Business logic: types, analysis, scoring, colors, chart datasets |
+| `src/lib/ai/` | AI system: prompt construction, tool definitions, chat hook, action/data executors |
+| `public/data/` | Static JSON/GeoJSON datasets served to the frontend |
+| `python/` | uv-managed data pipeline (fetch + clean scripts), Jupyter notebooks, ML training |
 
 ## Data Sources
 
