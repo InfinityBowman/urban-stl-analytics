@@ -19,7 +19,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
     function: {
       name: 'set_layers',
       description:
-        'Enable or disable map layers. Only include layers you want to change. Available layers: complaints, crime, transit, vacancy, foodAccess, arpa, demographics, housing, affected.',
+        'Enable or disable map layers. Only include layers you want to change. Available layers: complaints, crime, transit, vacancy, foodAccess, demographics, housing, affected. Note: ARPA has no map layer (analytics/charts only).',
       parameters: {
         type: 'object',
         properties: {
@@ -31,7 +31,6 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
               transit: { type: 'boolean' },
               vacancy: { type: 'boolean' },
               foodAccess: { type: 'boolean' },
-              arpa: { type: 'boolean' },
               demographics: { type: 'boolean' },
               housing: { type: 'boolean' },
               affected: { type: 'boolean' },
@@ -83,6 +82,61 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
             enum: ['rent', 'value'],
             description: 'Housing choropleth metric: median rent or home value',
           },
+          transitStops: {
+            type: 'boolean',
+            description: 'Show/hide transit stops on map',
+          },
+          transitRoutes: {
+            type: 'boolean',
+            description: 'Show/hide transit routes on map',
+          },
+          transitWalkshed: {
+            type: 'boolean',
+            description: 'Show/hide walk radius overlay around stops',
+          },
+          vacancyUseFilter: {
+            type: 'string',
+            enum: ['all', 'housing', 'solar', 'garden'],
+            description: 'Filter vacancies by potential use',
+          },
+          vacancyOwnerFilter: {
+            type: 'string',
+            enum: ['all', 'lra', 'city', 'private'],
+            description: 'Filter vacancies by owner type',
+          },
+          vacancyTypeFilter: {
+            type: 'string',
+            enum: ['all', 'building', 'lot'],
+            description: 'Filter vacancies by property type',
+          },
+          vacancyHoodFilter: {
+            type: 'string',
+            description: 'Filter vacancies to a neighborhood name, or "all" for no filter',
+          },
+          vacancyMinScore: {
+            type: 'number',
+            description: 'Minimum vacancy triage score (0–100)',
+          },
+          vacancyMaxScore: {
+            type: 'number',
+            description: 'Maximum vacancy triage score (0–100)',
+          },
+          foodDesertTracts: {
+            type: 'boolean',
+            description: 'Show/hide food desert census tract polygons',
+          },
+          groceryStores: {
+            type: 'boolean',
+            description: 'Show/hide grocery store markers',
+          },
+          timeRangeStart: {
+            type: 'string',
+            description: 'Start of time range filter (ISO date like "2023-01-01")',
+          },
+          timeRangeEnd: {
+            type: 'string',
+            description: 'End of time range filter (ISO date like "2023-12-31")',
+          },
         },
       },
     },
@@ -115,7 +169,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
         properties: {
           type: {
             type: 'string',
-            enum: ['stop', 'grocery', 'foodDesert'],
+            enum: ['stop', 'grocery', 'foodDesert', 'vacancy'],
             description: 'Entity type',
           },
           id: {
@@ -164,6 +218,79 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
           },
         },
         required: ['datasetKey'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_map_style',
+      description: 'Change the map base style.',
+      parameters: {
+        type: 'object',
+        properties: {
+          style: {
+            type: 'string',
+            enum: ['light', 'dark', 'satellite', 'streets'],
+            description: 'Map style to apply',
+          },
+        },
+        required: ['style'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'compare_neighborhoods',
+      description:
+        'Enter or exit neighborhood comparison mode. Optionally specify two neighborhoods to compare side-by-side.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+            description: 'Whether compare mode should be on or off',
+          },
+          neighborhoodA: {
+            type: 'string',
+            description: 'First neighborhood name to compare (optional)',
+          },
+          neighborhoodB: {
+            type: 'string',
+            description: 'Second neighborhood name to compare (optional)',
+          },
+        },
+        required: ['enabled'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_analytics_tab',
+      description:
+        'Switch the analytics panel to a specific tab. Opens the panel if closed. Available tabs: complaints, crime, transit, vacancy, arpa, demographics, housing, affected, chart.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tab: {
+            type: 'string',
+            enum: [
+              'complaints',
+              'crime',
+              'transit',
+              'vacancy',
+              'arpa',
+              'demographics',
+              'housing',
+              'affected',
+              'chart',
+            ],
+            description: 'Analytics tab to switch to',
+          },
+        },
+        required: ['tab'],
       },
     },
   },

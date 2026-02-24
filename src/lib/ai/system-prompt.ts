@@ -65,7 +65,9 @@ You help users explore and analyze city data by:
 - Active layers: ${activeLayers || 'none'}
 - Selected entity: ${selectedDesc}
 - Analytics panel: ${state.analyticsPanelExpanded ? 'open' : 'closed'}
-- Current filters: complaintsMode=${state.subToggles.complaintsMode}, complaintsCategory=${state.subToggles.complaintsCategory}, crimeMode=${state.subToggles.crimeMode}, crimeCategory=${state.subToggles.crimeCategory}, demographicsMetric=${state.subToggles.demographicsMetric}, housingMetric=${state.subToggles.housingMetric}
+- Current filters: ${Object.entries(state.subToggles).map(([k, v]) => `${k}=${v === '' ? '(none)' : v}`).join(', ')}
+- Map style: ${state.mapStyle}
+- Compare mode: ${state.compareMode ? 'on' : 'off'} (A: ${state.compareNeighborhoodA ?? 'none'}, B: ${state.compareNeighborhoodB ?? 'none'})
 
 ## Data Availability
 ${kpiSnapshot}
@@ -89,7 +91,6 @@ Available data tools:
 - transit: Metro bus/rail stops, routes, walksheds
 - vacancy: Vacant buildings/lots with triage scores
 - foodAccess: Food desert census tracts + grocery stores
-- arpa: ARPA (American Rescue Plan Act) fund expenditures
 - demographics: Census population, housing vacancy, demographic data
 - housing: Census ACS median rent and home values by neighborhood
 - affected: Composite distress scores (crime + vacancy + complaints + food access + pop decline)
@@ -104,6 +105,31 @@ Use these EXACT values with set_filters. Values are case-sensitive.
 **demographicsMetric**: "population", "vacancyRate", "popChange"
 **arpaCategory**: "all"${arpaCategories ? `, ${arpaCategories}` : ''}
 **housingMetric**: "rent", "value"
+
+**Transit sub-layers** (booleans — auto-enables transit layer):
+- **transitStops**: show/hide stop markers
+- **transitRoutes**: show/hide route lines
+- **transitWalkshed**: show/hide walk radius overlay
+
+**Vacancy filters** (auto-enables vacancy layer):
+- **vacancyUseFilter**: "all", "housing", "solar", "garden"
+- **vacancyOwnerFilter**: "all", "lra", "city", "private"
+- **vacancyTypeFilter**: "all", "building", "lot"
+- **vacancyHoodFilter**: "all" or a neighborhood name
+- **vacancyMinScore** / **vacancyMaxScore**: 0–100 triage score range
+
+**Food access sub-layers** (booleans — auto-enables foodAccess layer):
+- **foodDesertTracts**: show/hide desert tract polygons
+- **groceryStores**: show/hide grocery store markers
+
+**Time range** (ISO date strings):
+- **timeRangeStart** / **timeRangeEnd**: e.g. "2023-01-01" to "2023-12-31"
+
+## Additional Tools
+- **set_map_style**: Change base map style ("light", "dark", "satellite", "streets")
+- **compare_neighborhoods**: Enter/exit compare mode, optionally set two neighborhoods to compare side-by-side
+- **set_analytics_tab**: Switch analytics panel to a specific tab (complaints, crime, transit, vacancy, arpa, demographics, housing, affected, chart). Opens the panel and auto-enables the associated layer.
+- Note: ARPA has no map layer but is available as an analytics tab and via the chart builder.
 
 ## Neighborhoods
 St. Louis has 79 neighborhoods. Use select_neighborhood with the name:

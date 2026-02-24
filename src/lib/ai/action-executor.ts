@@ -40,6 +40,14 @@ function friendlyLabel(value: string): string {
   if (value === 'popChange') return 'Pop Change'
   if (value === 'rent') return 'Median Rent'
   if (value === 'value') return 'Home Value'
+  if (value === 'housing') return 'Housing'
+  if (value === 'solar') return 'Solar'
+  if (value === 'garden') return 'Garden'
+  if (value === 'lra') return 'LRA'
+  if (value === 'city') return 'City'
+  if (value === 'private') return 'Private'
+  if (value === 'building') return 'Building'
+  if (value === 'lot') return 'Lot'
   // Title-case raw strings like "STEALING - MOTOR VEHICLE/..."
   return value
     .toLowerCase()
@@ -79,7 +87,7 @@ export function executeToolCall(
         argKey: string,
         toggleKey: keyof SubToggles,
         candidates: string[],
-        layerKey: keyof LayerToggles,
+        layerKey: keyof LayerToggles | null,
         label: string,
       ) => {
         if (!(argKey in args)) return
@@ -92,7 +100,7 @@ export function executeToolCall(
         const matched = fuzzyMatch(raw, candidates)
         if (matched) {
           // Auto-enable the layer if it's off
-          if (!state.layers[layerKey]) {
+          if (layerKey && !state.layers[layerKey]) {
             dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
           }
           dispatch({ type: 'SET_SUB_TOGGLE', key: toggleKey, value: matched })
@@ -107,13 +115,17 @@ export function executeToolCall(
         argKey: string,
         toggleKey: keyof SubToggles,
         valid: string[],
-        layerKey: keyof LayerToggles,
+        layerKey: keyof LayerToggles | null,
         label: string,
       ) => {
         if (!(argKey in args)) return
         const raw = args[argKey] as string
-        const matched = valid.find((v) => v.toLowerCase() === raw.toLowerCase()) ?? valid[0]
-        if (!state.layers[layerKey]) {
+        const matched = valid.find((v) => v.toLowerCase() === raw.toLowerCase())
+        if (!matched) {
+          descriptions.push(`${label}: no match for "${raw}"`)
+          return
+        }
+        if (layerKey && !state.layers[layerKey]) {
           dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
         }
         dispatch({ type: 'SET_SUB_TOGGLE', key: toggleKey, value: matched })
@@ -137,14 +149,82 @@ export function executeToolCall(
       // Demographics
       setEnum('demographicsMetric', 'demographicsMetric', ['population', 'vacancyRate', 'popChange'], 'demographics', 'Demographics')
 
-      // ARPA
+      // ARPA (no map layer — pass null for layerKey)
       const arpaCategories = data.arpaData
         ? Object.keys(data.arpaData.categoryBreakdown)
         : []
-      resolveCategory('arpaCategory', 'arpaCategory', arpaCategories, 'arpa', 'ARPA filter')
+      resolveCategory('arpaCategory', 'arpaCategory', arpaCategories, null, 'ARPA filter')
 
       // Housing
       setEnum('housingMetric', 'housingMetric', ['rent', 'value'], 'housing', 'Housing')
+
+      // Transit sub-layers (booleans)
+      for (const key of ['transitStops', 'transitRoutes', 'transitWalkshed'] as const) {
+        if (key in args) {
+          if (!state.layers.transit) {
+            dispatch({ type: 'TOGGLE_LAYER', layer: 'transit' })
+          }
+          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as boolean })
+          descriptions.push(`${key}: ${args[key] ? 'On' : 'Off'}`)
+        }
+      }
+
+      // Vacancy filters
+      setEnum('vacancyUseFilter', 'vacancyUseFilter', ['all', 'housing', 'solar', 'garden'], 'vacancy', 'Vacancy use')
+      setEnum('vacancyOwnerFilter', 'vacancyOwnerFilter', ['all', 'lra', 'city', 'private'], 'vacancy', 'Vacancy owner')
+      setEnum('vacancyTypeFilter', 'vacancyTypeFilter', ['all', 'building', 'lot'], 'vacancy', 'Vacancy type')
+
+      if ('vacancyHoodFilter' in args) {
+        const raw = args.vacancyHoodFilter as string
+        if (!state.layers.vacancy) {
+          dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+        }
+        if (raw === 'all') {
+          dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyHoodFilter', value: 'all' })
+          descriptions.push('Vacancy neighborhood: All')
+        } else {
+          const hoodNames = data.vacancyData
+            ? [...new Set(data.vacancyData.map((p) => p.neighborhood))]
+            : []
+          const matched = fuzzyMatch(raw, hoodNames)
+          if (matched) {
+            dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyHoodFilter', value: matched })
+            descriptions.push(`Vacancy neighborhood: ${matched}`)
+          } else {
+            descriptions.push(`Vacancy neighborhood: no match for "${raw}"`)
+          }
+        }
+      }
+
+      for (const key of ['vacancyMinScore', 'vacancyMaxScore'] as const) {
+        if (key in args) {
+          if (!state.layers.vacancy) {
+            dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+          }
+          const val = Number(args[key])
+          dispatch({ type: 'SET_SUB_TOGGLE', key, value: val })
+          descriptions.push(`${key}: ${val}`)
+        }
+      }
+
+      // Food access sub-layers (booleans)
+      for (const key of ['foodDesertTracts', 'groceryStores'] as const) {
+        if (key in args) {
+          if (!state.layers.foodAccess) {
+            dispatch({ type: 'TOGGLE_LAYER', layer: 'foodAccess' })
+          }
+          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as boolean })
+          descriptions.push(`${key}: ${args[key] ? 'On' : 'Off'}`)
+        }
+      }
+
+      // Time range
+      for (const key of ['timeRangeStart', 'timeRangeEnd'] as const) {
+        if (key in args) {
+          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as string })
+          descriptions.push(`${key}: ${args[key] || '(cleared)'}`)
+        }
+      }
 
       return {
         description: descriptions.length ? descriptions.join(', ') : '',
@@ -184,6 +264,14 @@ export function executeToolCall(
         dispatch({
           type: 'SELECT_ENTITY',
           entity: { type: 'foodDesert', id: entityId },
+        })
+      } else if (entityType === 'vacancy') {
+        if (!state.layers.vacancy) {
+          dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+        }
+        dispatch({
+          type: 'SELECT_ENTITY',
+          entity: { type: 'vacancy', id: Number(entityId) },
         })
       }
       return { description: `Selected ${entityType} ${entityId}` }
@@ -241,6 +329,77 @@ export function executeToolCall(
     case 'clear_selection': {
       dispatch({ type: 'CLEAR_SELECTION' })
       return { description: 'Cleared selection' }
+    }
+
+    case 'set_map_style': {
+      const style = args.style as 'light' | 'dark' | 'satellite' | 'streets'
+      dispatch({ type: 'SET_MAP_STYLE', style })
+      return { description: `Map style: ${style}` }
+    }
+
+    case 'compare_neighborhoods': {
+      const enabled = args.enabled as boolean
+      const descriptions: Array<string> = []
+
+      if (!enabled) {
+        if (state.compareMode) {
+          dispatch({ type: 'TOGGLE_COMPARE_MODE' })
+          descriptions.push('Exited compare mode')
+        } else {
+          descriptions.push('Compare mode already off')
+        }
+        return { description: descriptions.join(', ') }
+      }
+
+      // Enable compare mode if off
+      if (!state.compareMode) {
+        dispatch({ type: 'TOGGLE_COMPARE_MODE' })
+        descriptions.push('Entered compare mode')
+      }
+
+      // Resolve neighborhoods A and B
+      const resolveSlot = (argKey: string, slot: 'A' | 'B') => {
+        if (!args[argKey] || !data.neighborhoods) return
+        const resolved = resolveNeighborhood(args[argKey] as string, data.neighborhoods)
+        if (resolved) {
+          dispatch({ type: 'SET_COMPARE_NEIGHBORHOOD', slot, id: resolved.nhdNum })
+          descriptions.push(`${slot}: ${resolved.name}`)
+        } else {
+          descriptions.push(`${slot}: no match for "${args[argKey]}"`)
+        }
+      }
+      resolveSlot('neighborhoodA', 'A')
+      resolveSlot('neighborhoodB', 'B')
+
+      return { description: descriptions.join(', ') || 'Compare mode enabled' }
+    }
+
+    case 'set_analytics_tab': {
+      const tab = args.tab as string
+
+      // Open analytics panel if closed
+      if (!state.analyticsPanelExpanded) {
+        dispatch({ type: 'TOGGLE_ANALYTICS' })
+      }
+
+      // Auto-enable the associated layer (chart tab has no layer)
+      // arpa intentionally omitted — no map layer
+      const tabLayerMap: Record<string, keyof LayerToggles> = {
+        complaints: 'complaints',
+        crime: 'crime',
+        transit: 'transit',
+        vacancy: 'vacancy',
+        demographics: 'demographics',
+        housing: 'housing',
+        affected: 'affected',
+      }
+      const layerKey = tabLayerMap[tab]
+      if (layerKey && !state.layers[layerKey]) {
+        dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
+      }
+
+      dispatch({ type: 'SET_ANALYTICS_TAB', tab })
+      return { description: `Switched to ${tab} analytics tab` }
     }
 
     default:

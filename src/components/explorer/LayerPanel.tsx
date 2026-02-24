@@ -8,7 +8,6 @@ import {
   Building03Icon,
   Store01Icon,
   UserGroupIcon,
-  DollarCircleIcon,
   Home01Icon,
   Cancel01Icon,
 } from '@hugeicons/core-free-icons'
@@ -67,13 +66,6 @@ const LAYER_CONFIG: Array<{
     color: '#a855f7',
     desc: 'Census population & housing data',
     icon: UserGroupIcon,
-  },
-  {
-    key: 'arpa',
-    label: 'ARPA Funds',
-    color: '#10b981',
-    desc: 'Federal relief spending analytics',
-    icon: DollarCircleIcon,
   },
   {
     key: 'housing',
@@ -282,7 +274,6 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
     (layerKey === 'vacancy' && !data.vacancyData) ||
     (layerKey === 'foodAccess' && !data.foodDeserts) ||
     (layerKey === 'crime' && !data.crimeData) ||
-    (layerKey === 'arpa' && !data.arpaData) ||
     (layerKey === 'demographics' && !data.demographicsData) ||
     (layerKey === 'housing' && !data.housingData) ||
     (layerKey === 'affected' && !data.affectedScores)
@@ -302,8 +293,6 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
       return <CrimeFilters />
     case 'demographics':
       return <DemographicsFilters />
-    case 'arpa':
-      return <ArpaFilters />
     case 'housing':
       return <HousingFilters />
     case 'affected':
@@ -774,15 +763,6 @@ function DemographicsFilters() {
           }
         />
       ))}
-    </div>
-  )
-}
-
-function ArpaFilters() {
-  return (
-    <div className="flex items-center gap-1.5 text-[0.62rem] text-foreground/50">
-      <div className="h-1 w-1 rounded-full bg-emerald-500/60" />
-      Analytics-only layer
     </div>
   )
 }
