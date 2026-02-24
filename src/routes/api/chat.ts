@@ -79,7 +79,7 @@ export const Route = createFileRoute('/api/chat')({
         })
 
         const openRouterBody = {
-          model: 'z-ai/glm-5',
+          model: 'minimax/minimax-m2.5',
           stream: true,
           messages: [{ role: 'system', content: context }, ...sanitizedMessages],
           tools: TOOL_DEFINITIONS,

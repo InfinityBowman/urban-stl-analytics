@@ -40,10 +40,10 @@ const TOOL_LABELS: Record<string, string> = {
 const THINKING_WORDS = [
   'Pondering',
   'Crunching data',
-  'Thinking hard',
+  'Looking around',
   'Digging in',
   'On it',
-  'Sifting through',
+  'Sifting',
   'Connecting dots',
 ]
 
