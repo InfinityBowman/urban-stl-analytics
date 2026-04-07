@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import type { NeighborhoodDemographics } from '@/lib/types'
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 interface RaceBreakdownChartProps {
   demographics: Record<string, NeighborhoodDemographics>

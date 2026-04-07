@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { PopulationKpiGrid } from './PopulationKpiGrid'
 import { PopulationChangeTable } from './PopulationChangeTable'
 import { RaceBreakdownChart } from './RaceBreakdownChart'
-import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import type { NeighborhoodDemographics } from '@/lib/types'
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 type Tab = 'overview' | 'change' | 'demographics'
 

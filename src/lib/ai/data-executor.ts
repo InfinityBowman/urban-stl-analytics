@@ -1,7 +1,7 @@
+import { resolveNeighborhood } from './neighborhood-resolver'
 import type { ExplorerData } from '@/lib/explorer-types'
 import type { ToolCall } from './use-chat'
 import { computeNeighborhoodMetrics } from '@/lib/neighborhood-metrics'
-import { resolveNeighborhood } from './neighborhood-resolver'
 
 export interface DataToolResult {
   toolCallId: string
@@ -50,13 +50,6 @@ export function executeDataTool(
       break
     case 'get_housing_data':
       content = buildHousingData(args.neighborhood as string | undefined, data)
-      break
-    case 'get_affected_scores':
-      content = buildAffectedScores(
-        args.neighborhood as string | undefined,
-        Math.min(Number(args.limit) || 10, 79),
-        data,
-      )
       break
     default:
       content = { error: `Unknown data tool: ${toolCall.name}` }
@@ -177,19 +170,6 @@ function buildCitySummary(data: ExplorerData) {
     summary.housing = 'still loading'
   }
 
-  if (data.affectedScores && data.affectedScores.length > 0) {
-    const scores = data.affectedScores
-    const avg = Math.round(scores.reduce((s, a) => s + a.composite, 0) / scores.length)
-    summary.affected = {
-      neighborhoodsScored: scores.length,
-      avgDistress: avg,
-      mostDistressed: { name: scores[0].name, score: scores[0].composite },
-      leastDistressed: { name: scores[scores.length - 1].name, score: scores[scores.length - 1].composite },
-    }
-  } else {
-    summary.affected = 'still loading'
-  }
-
   return summary
 }
 
@@ -210,13 +190,8 @@ function buildNeighborhoodDetail(name: string, data: ExplorerData) {
   }
 
   if (metrics) {
-    result.compositeScore = metrics.compositeScore
-    result.transitScore = metrics.transitScore
-    result.complaintScore = metrics.complaintScore
-    result.foodScore = metrics.foodScore
-    result.vacancyScore = metrics.vacancyScore
     result.totalComplaints = metrics.totalComplaints
-    result.stopsNearby = metrics.stopsNearby
+    result.stopsNearby = metrics.nearbyStops.length
     result.totalTrips = metrics.totalTrips
     result.nearestGrocery = isFinite(metrics.nearestGroceryDist)
       ? {
@@ -224,7 +199,7 @@ function buildNeighborhoodDetail(name: string, data: ExplorerData) {
           distanceMiles: Math.round(metrics.nearestGroceryDist * 100) / 100,
         }
       : { name: 'N/A', distanceMiles: null }
-    result.vacancyCount = metrics.vacancyCount
+    result.vacancyCount = metrics.nearbyVacancies.length
     result.avgTriageScore = metrics.avgTriageScore
   }
 
@@ -275,21 +250,6 @@ function buildNeighborhoodDetail(name: string, data: ExplorerData) {
       medianRent: h.medianRent,
       medianHomeValue: h.medianHomeValue,
       tractCount: h.tractCount,
-    }
-  }
-
-  // Add affected score if available
-  if (data.affectedScores) {
-    const score = data.affectedScores.find((a) => a.nhdId === hoodKey)
-    if (score) {
-      result.affectedScore = {
-        composite: score.composite,
-        crimeScore: score.crimeScore,
-        vacancyScore: score.vacancyScore,
-        complaintScore: score.complaintScore,
-        foodScore: score.foodScore,
-        popDeclineScore: score.popDeclineScore,
-      }
     }
   }
 
@@ -389,13 +349,6 @@ function buildRankings(
         if (h.medianHomeValue != null) {
           entries.push({ name: h.name, nhdNum: id, value: h.medianHomeValue })
         }
-      }
-      break
-    }
-    case 'distress': {
-      if (!data.affectedScores) return { error: 'still loading' }
-      for (const s of data.affectedScores) {
-        entries.push({ name: s.name, nhdNum: s.nhdId, value: s.composite })
       }
       break
     }
@@ -576,70 +529,23 @@ function buildHousingData(neighborhood: string | undefined, data: ExplorerData) 
       }
     }
   } else {
-    // Return top/bottom by rent
+    // Return top/bottom by rent.
     const byRent = Object.entries(h.neighborhoods)
       .filter(([, v]) => v.medianRent != null)
       .sort((a, b) => (b[1].medianRent ?? 0) - (a[1].medianRent ?? 0))
     const top = Math.min(5, Math.floor(byRent.length / 2))
-    result.highestRent = byRent.slice(0, top).map(([id, v]) => ({
-      name: v.name, nhdNum: id, medianRent: v.medianRent,
-    }))
-    result.lowestRent = byRent.slice(-top).reverse().map(([id, v]) => ({
-      name: v.name, nhdNum: id, medianRent: v.medianRent,
-    }))
-  }
-
-  return result
-}
-
-function buildAffectedScores(
-  neighborhood: string | undefined,
-  limit: number,
-  data: ExplorerData,
-) {
-  if (!data.affectedScores || data.affectedScores.length === 0) {
-    return { error: 'still loading' }
-  }
-
-  const scores = data.affectedScores
-
-  if (neighborhood && data.neighborhoods) {
-    const resolved = resolveNeighborhood(neighborhood, data.neighborhoods)
-    if (!resolved) return { error: `No neighborhood found matching "${neighborhood}"` }
-    const score = scores.find((s) => s.nhdId === resolved.nhdNum.padStart(2, '0'))
-    if (!score) return { error: `No affected score for ${resolved.name}` }
-    const rank = scores.indexOf(score) + 1
-    return {
-      neighborhood: score.name,
-      nhdNum: score.nhdId,
-      rank,
-      totalNeighborhoods: scores.length,
-      composite: score.composite,
-      subScores: {
-        crime: score.crimeScore,
-        vacancy: score.vacancyScore,
-        complaints: score.complaintScore,
-        foodAccess: score.foodScore,
-        popDecline: score.popDeclineScore,
-      },
+    if (top === 0) {
+      result.highestRent = []
+      result.lowestRent = []
+    } else {
+      result.highestRent = byRent.slice(0, top).map(([id, v]) => ({
+        name: v.name, nhdNum: id, medianRent: v.medianRent,
+      }))
+      result.lowestRent = byRent.slice(-top).reverse().map(([id, v]) => ({
+        name: v.name, nhdNum: id, medianRent: v.medianRent,
+      }))
     }
   }
 
-  const avg = Math.round(scores.reduce((s, a) => s + a.composite, 0) / scores.length)
-  return {
-    avgDistress: avg,
-    totalNeighborhoods: scores.length,
-    aboveThreshold50: scores.filter((s) => s.composite >= 50).length,
-    rankings: scores.slice(0, limit).map((s, i) => ({
-      rank: i + 1,
-      name: s.name,
-      nhdNum: s.nhdId,
-      composite: s.composite,
-      crimeScore: s.crimeScore,
-      vacancyScore: s.vacancyScore,
-      complaintScore: s.complaintScore,
-      foodScore: s.foodScore,
-      popDeclineScore: s.popDeclineScore,
-    })),
-  }
+  return result
 }

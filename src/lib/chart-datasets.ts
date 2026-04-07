@@ -23,16 +23,16 @@ export interface DatasetDef {
   label: string
   group: string
   description: string
-  fields: FieldDef[]
-  dynamicFields?: (data: ExplorerData) => FieldDef[]
-  extract: (data: ExplorerData) => Record<string, string | number>[] | null
-  requiredLayers: (keyof LayerToggles)[]
-  presets?: PresetConfig[]
+  fields: Array<FieldDef>
+  dynamicFields?: (data: ExplorerData) => Array<FieldDef>
+  extract: (data: ExplorerData) => Array<Record<string, string | number>> | null
+  requiredLayers: Array<keyof LayerToggles>
+  presets?: Array<PresetConfig>
 }
 
 // ── Dataset Registry ─────────────────────────────────────────
 
-export const DATASET_REGISTRY: DatasetDef[] = [
+export const DATASET_REGISTRY: Array<DatasetDef> = [
   // 311 Complaints
   {
     key: 'complaints-daily',
@@ -72,7 +72,7 @@ export const DATASET_REGISTRY: DatasetDef[] = [
       const entries = Object.entries(data.csbData.dailyCounts).sort()
       const values = entries.map((e) => e[1])
       // Compute 7-day moving average
-      const ma7: (number | null)[] = values.map((_, i) => {
+      const ma7: Array<number | null> = values.map((_, i) => {
         if (i < 6) return null
         let sum = 0
         for (let j = i - 6; j <= i; j++) sum += values[j]
@@ -80,7 +80,7 @@ export const DATASET_REGISTRY: DatasetDef[] = [
       })
 
       return entries.map(([date, count], i) => {
-        const w = data.trendsData?.weather?.[date]
+        const w = data.trendsData?.weather[date]
         return {
           date,
           complaints: count,
@@ -355,7 +355,7 @@ export const DATASET_REGISTRY: DatasetDef[] = [
       if (!data.crimeData) return null
       const entries = Object.entries(data.crimeData.dailyCounts).sort()
       const values = entries.map((e) => e[1])
-      const ma7: (number | null)[] = values.map((_, i) => {
+      const ma7: Array<number | null> = values.map((_, i) => {
         if (i < 6) return null
         let sum = 0
         for (let j = i - 6; j <= i; j++) sum += values[j]
@@ -595,52 +595,6 @@ export const DATASET_REGISTRY: DatasetDef[] = [
     },
   },
 
-  // Affected Neighborhoods
-  {
-    key: 'affected-scores',
-    label: 'Distress Scores',
-    group: 'Affected',
-    description: 'Composite distress scores with sub-score breakdown by neighborhood',
-    presets: [
-      {
-        name: 'Distress Overview',
-        xAxisField: 'neighborhood',
-        series: [{ fieldKey: 'composite', chartType: 'bar' }],
-      },
-      {
-        name: 'Sub-Score Breakdown',
-        xAxisField: 'neighborhood',
-        series: [
-          { fieldKey: 'crimeScore', chartType: 'bar' },
-          { fieldKey: 'vacancyScore', chartType: 'bar' },
-          { fieldKey: 'complaintScore', chartType: 'bar' },
-        ],
-      },
-    ],
-    fields: [
-      { key: 'neighborhood', label: 'Neighborhood', type: 'category' },
-      { key: 'composite', label: 'Composite Score', type: 'number' },
-      { key: 'crimeScore', label: 'Crime Score', type: 'number' },
-      { key: 'vacancyScore', label: 'Vacancy Score', type: 'number' },
-      { key: 'complaintScore', label: 'Complaint Score', type: 'number' },
-      { key: 'foodScore', label: 'Food Access Score', type: 'number' },
-      { key: 'popDeclineScore', label: 'Pop Decline Score', type: 'number' },
-    ],
-    requiredLayers: ['affected'],
-    extract: (data) => {
-      if (!data.affectedScores) return null
-      return data.affectedScores.map((s) => ({
-        neighborhood: s.name,
-        composite: s.composite,
-        crimeScore: s.crimeScore,
-        vacancyScore: s.vacancyScore,
-        complaintScore: s.complaintScore,
-        foodScore: s.foodScore,
-        popDeclineScore: s.popDeclineScore,
-      }))
-    },
-  },
-
   // Food Access
   {
     key: 'food-desert-tracts',
@@ -688,7 +642,7 @@ export function getDataset(key: string): DatasetDef | undefined {
 export function getDatasetFields(
   def: DatasetDef,
   data: ExplorerData,
-): FieldDef[] {
+): Array<FieldDef> {
   const dynamic = def.dynamicFields?.(data) ?? []
   return [...def.fields, ...dynamic]
 }
@@ -700,13 +654,12 @@ export const GROUP_DESCRIPTIONS: Record<string, string> = {
   'ARPA Funds': 'American Rescue Plan Act expenditures',
   Demographics: 'Census population and housing data',
   Housing: 'Census ACS median rent and home values',
-  Affected: 'Composite neighborhood distress scores',
   'Food Access': 'Food desert and grocery access metrics',
 }
 
 // Group datasets by their group label
-export function getGroupedDatasets(): Record<string, DatasetDef[]> {
-  const groups: Record<string, DatasetDef[]> = {}
+export function getGroupedDatasets(): Record<string, Array<DatasetDef>> {
+  const groups: Record<string, Array<DatasetDef>> = {}
   for (const d of DATASET_REGISTRY) {
     ;(groups[d.group] ??= []).push(d)
   }

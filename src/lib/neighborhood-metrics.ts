@@ -1,25 +1,22 @@
-import type { ExplorerData } from './explorer-types'
 import { haversine, polygonCentroid } from './equity'
+import type { ExplorerData } from './explorer-types'
+import type { GeoJSONFeature, VacantProperty } from './types'
 
 export interface NeighborhoodMetrics {
   name: string
-  compositeScore: number
-  transitScore: number
-  complaintScore: number
-  foodScore: number
-  vacancyScore: number
+  centroid: [number, number]
   totalComplaints: number
-  stopsNearby: number
+  nearbyVacancies: Array<VacantProperty>
+  nearbyStops: Array<GeoJSONFeature>
   totalTrips: number
   nearestGroceryDist: number
   nearestGroceryName: string
-  vacancyCount: number
   avgTriageScore: number
-  centroid: [number, number]
 }
 
 /**
- * Pure computation of neighborhood metrics from ExplorerData.
+ * Pure computation of raw neighborhood stats from ExplorerData.
+ * Returns counts, lists, and distances (no derived composite scores).
  * Used by the useNeighborhoodMetrics hook and the AI data executor.
  */
 export function computeNeighborhoodMetrics(
@@ -34,12 +31,19 @@ export function computeNeighborhoodMetrics(
 
   if (!hoodFeature) return null
 
-  const centroid: [number, number] = polygonCentroid(
-    hoodFeature.geometry.coordinates as Array<Array<Array<number>>>,
-  )
+  // Handle both Polygon and MultiPolygon. Without this guard, MultiPolygon
+  // neighborhoods (St. Louis Hills) produce NaN centroids.
+  let ring: Array<Array<number>>
+  if (hoodFeature.geometry.type === 'MultiPolygon') {
+    ring = (
+      hoodFeature.geometry.coordinates as Array<Array<Array<Array<number>>>>
+    )[0][0]
+  } else {
+    ring = (hoodFeature.geometry.coordinates as Array<Array<Array<number>>>)[0]
+  }
+  const centroid: [number, number] = polygonCentroid([ring])
 
-  const vacancies = data.vacancyData ?? []
-  const hoodVacancies = vacancies.filter(
+  const nearbyVacancies = (data.vacancyData ?? []).filter(
     (p) => haversine(centroid[0], centroid[1], p.lat, p.lng) <= 0.5,
   )
 
@@ -47,67 +51,45 @@ export function computeNeighborhoodMetrics(
     data.stops?.features.filter((stop) => {
       const [lon, lat] = stop.geometry.coordinates as Array<number>
       return haversine(centroid[0], centroid[1], lat, lon) <= 0.5
-    }) || []
+    }) ?? []
 
-  const totalFrequency = nearbyStops.reduce((s, stop) => {
+  const totalTrips = nearbyStops.reduce((s, stop) => {
     const stats = data.stopStats?.[stop.properties.stop_id as string]
-    return s + (stats?.trip_count || 0)
+    return s + (stats?.trip_count ?? 0)
   }, 0)
 
   let nearestGroceryDist = Infinity
   let nearestGroceryName = 'N/A'
   if (data.groceryStores) {
-    data.groceryStores.features.forEach((store) => {
+    for (const store of data.groceryStores.features) {
       const [lon, lat] = store.geometry.coordinates as Array<number>
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (dist < nearestGroceryDist) {
         nearestGroceryDist = dist
         nearestGroceryName = store.properties.name
       }
-    })
+    }
   }
 
-  const avgVacancyScore = hoodVacancies.length
+  const avgTriageScore = nearbyVacancies.length
     ? Math.round(
-        hoodVacancies.reduce((s, p) => s + p.triageScore, 0) /
-          hoodVacancies.length,
+        nearbyVacancies.reduce((s, p) => s + p.triageScore, 0) /
+          nearbyVacancies.length,
       )
     : 0
-
-  const transitScore = Math.min(
-    100,
-    nearbyStops.length * 15 + Math.min(totalFrequency * 0.3, 30),
-  )
-  const complaintScore = hood ? Math.max(0, 100 - hood.total / 50) : 50
-  const foodScore =
-    nearestGroceryDist <= 0.5
-      ? 90
-      : nearestGroceryDist <= 1
-        ? 60
-        : nearestGroceryDist <= 2
-          ? 30
-          : 10
-  const compositeScore = Math.round(
-    (transitScore + complaintScore + foodScore + (100 - avgVacancyScore)) / 4,
-  )
 
   const name =
     hoodFeature.properties.NHD_NAME || hood?.name || `Neighborhood ${hoodKey}`
 
   return {
     name,
-    compositeScore,
-    transitScore: Math.round(transitScore),
-    complaintScore: Math.round(complaintScore),
-    foodScore,
-    vacancyScore: 100 - avgVacancyScore,
+    centroid,
     totalComplaints: hood?.total ?? 0,
-    stopsNearby: nearbyStops.length,
-    totalTrips: totalFrequency,
+    nearbyVacancies,
+    nearbyStops,
+    totalTrips,
     nearestGroceryDist,
     nearestGroceryName,
-    vacancyCount: hoodVacancies.length,
-    avgTriageScore: avgVacancyScore,
-    centroid,
+    avgTriageScore,
   }
 }

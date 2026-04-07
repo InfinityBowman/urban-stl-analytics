@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import { HousingKpiCards } from './HousingKpiCards'
 import type { HousingData } from '@/lib/types'
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 type Metric = 'rent' | 'value'
 

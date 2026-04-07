@@ -12,9 +12,9 @@ import {
 import type { SeriesConfig } from './useChartBuilder'
 
 interface ChartCanvasProps {
-  data: Record<string, string | number>[]
+  data: Array<Record<string, string | number>>
   xAxisField: string
-  series: SeriesConfig[]
+  series: Array<SeriesConfig>
   title?: string
   height?: number
 }

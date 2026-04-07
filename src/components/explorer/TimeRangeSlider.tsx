@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo } from 'react'
+import { useData, useExplorer } from './ExplorerProvider'
 import { Slider } from '@/components/ui/slider'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useData, useExplorer } from './ExplorerProvider'
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v))
@@ -57,12 +57,12 @@ export function TimeRangeSlider() {
 
   const selectedYear = useMemo(() => {
     const { timeRangeStart } = state.subToggles
-    if (!timeRangeStart) return years[years.length - 1] ?? null
+    if (!timeRangeStart) return years[years.length - 1]
     return Number(timeRangeStart.slice(0, 4))
   }, [state.subToggles.timeRangeStart, years])
 
   const handleYearChange = useCallback(
-    (values: number[]) => {
+    (values: Array<number>) => {
       if (years.length === 0) return
       const idx = clamp(values[0], 0, years.length - 1)
       const year = years[idx]
@@ -82,8 +82,7 @@ export function TimeRangeSlider() {
 
   if (!visible || years.length < 2) return null
 
-  const yearIdx =
-    selectedYear != null ? years.indexOf(selectedYear) : years.length - 1
+  const yearIdx = years.indexOf(selectedYear)
   const safeIdx = yearIdx >= 0 ? yearIdx : years.length - 1
 
   return (
@@ -128,7 +127,7 @@ export function TimeRangeSlider() {
           </Tooltip>
         </span>
         <span className="text-[0.65rem] font-semibold tabular-nums">
-          {selectedYear ?? years[years.length - 1]}
+          {selectedYear}
         </span>
       </div>
 

@@ -77,13 +77,12 @@ You have tools to query the loaded datasets on demand. **Always call data tools 
 
 Available data tools:
 - **get_city_summary**: High-level stats across all loaded datasets. Call this for general "tell me about the city" questions.
-- **get_neighborhood_detail**: Deep dive on one neighborhood (complaints, crime, vacancy, transit, food access, demographics, composite score). Call this when asked about a specific neighborhood.
-- **get_rankings**: Rank neighborhoods by metric (complaints, crime, vacancy, population, vacancyRate, popChange, rent, homeValue, distress). Call this for "which neighborhood has the most/least X?" questions.
+- **get_neighborhood_detail**: Deep dive on one neighborhood (complaints, crime, vacancy, transit, food access, demographics). Call this when asked about a specific neighborhood.
+- **get_rankings**: Rank neighborhoods by metric (complaints, crime, vacancy, population, vacancyRate, popChange, rent, homeValue). Call this for "which neighborhood has the most/least X?" questions.
 - **get_category_breakdown**: Complaints or crime by category, optionally filtered to a neighborhood. Call this for "what types of crime/complaints?" questions.
 - **get_arpa_data**: ARPA spending summary with category and vendor breakdowns.
 - **get_food_access**: Food desert tracts and grocery store locations.
 - **get_housing_data**: Median rent and home values city-wide and per neighborhood.
-- **get_affected_scores**: Composite distress scores ranking neighborhoods by need.
 
 ## Available Layers
 - complaints: 311 service requests (trash, derelict buildings, potholes, etc.)
@@ -93,7 +92,6 @@ Available data tools:
 - foodAccess: Food desert census tracts + grocery stores
 - demographics: Census population, housing vacancy, demographic data
 - housing: Census ACS median rent and home values by neighborhood
-- affected: Composite distress scores (crime + vacancy + complaints + food access + pop decline)
 
 ## Available Filters (use set_filters tool)
 Use these EXACT values with set_filters. Values are case-sensitive.
@@ -128,7 +126,7 @@ Use these EXACT values with set_filters. Values are case-sensitive.
 ## Additional Tools
 - **set_map_style**: Change base map style ("light", "dark", "satellite", "streets")
 - **compare_neighborhoods**: Enter/exit compare mode, optionally set two neighborhoods to compare side-by-side
-- **set_analytics_tab**: Switch analytics panel to a specific tab (complaints, crime, transit, vacancy, arpa, demographics, housing, affected, chart). Opens the panel and auto-enables the associated layer.
+- **set_analytics_tab**: Switch analytics panel to a specific tab (complaints, crime, transit, vacancy, arpa, demographics, housing, chart). Opens the panel and auto-enables the associated layer.
 - Note: ARPA has no map layer but is available as an analytics tab and via the chart builder.
 
 ## Neighborhoods
@@ -143,7 +141,6 @@ Available dataset keys for configure_chart:
 - arpa-monthly, arpa-category
 - demographics-population
 - housing-neighborhood
-- affected-scores
 - food-desert-tracts
 
 ## Instructions

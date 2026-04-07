@@ -19,7 +19,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
     function: {
       name: 'set_layers',
       description:
-        'Enable or disable map layers. Only include layers you want to change. Available layers: complaints, crime, transit, vacancy, foodAccess, demographics, housing, affected. Note: ARPA has no map layer (analytics/charts only).',
+        'Enable or disable map layers. Only include layers you want to change. Available layers: complaints, crime, transit, vacancy, foodAccess, demographics, housing. Note: ARPA has no map layer (analytics/charts only).',
       parameters: {
         type: 'object',
         properties: {
@@ -33,7 +33,6 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
               foodAccess: { type: 'boolean' },
               demographics: { type: 'boolean' },
               housing: { type: 'boolean' },
-              affected: { type: 'boolean' },
             },
           },
         },
@@ -270,7 +269,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
     function: {
       name: 'set_analytics_tab',
       description:
-        'Switch the analytics panel to a specific tab. Opens the panel if closed. Available tabs: complaints, crime, transit, vacancy, arpa, demographics, housing, affected, chart.',
+        'Switch the analytics panel to a specific tab. Opens the panel if closed. Available tabs: complaints, crime, transit, vacancy, arpa, demographics, housing, chart.',
       parameters: {
         type: 'object',
         properties: {
@@ -284,7 +283,6 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
               'arpa',
               'demographics',
               'housing',
-              'affected',
               'chart',
             ],
             description: 'Analytics tab to switch to',
@@ -325,7 +323,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
     function: {
       name: 'get_neighborhood_detail',
       description:
-        'Get a deep dive on one neighborhood: complaints, crime, vacancy, transit access, food access, demographics, and composite equity score.',
+        'Get a deep dive on one neighborhood: complaints, crime, vacancy, transit access, food access, and demographics.',
       parameters: {
         type: 'object',
         properties: {
@@ -349,7 +347,7 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
         properties: {
           metric: {
             type: 'string',
-            enum: ['complaints', 'crime', 'vacancy', 'population', 'vacancyRate', 'popChange', 'rent', 'homeValue', 'distress'],
+            enum: ['complaints', 'crime', 'vacancy', 'population', 'vacancyRate', 'popChange', 'rent', 'homeValue'],
             description: 'Metric to rank by',
           },
           order: {
@@ -435,27 +433,6 @@ export const TOOL_DEFINITIONS: Array<ToolDefinition> = [
       },
     },
   },
-  {
-    type: 'function',
-    function: {
-      name: 'get_affected_scores',
-      description:
-        'Get composite distress scores for neighborhoods, ranked by severity. Includes sub-scores for crime, vacancy, complaints, food access, and population decline.',
-      parameters: {
-        type: 'object',
-        properties: {
-          neighborhood: {
-            type: 'string',
-            description: 'Optional neighborhood name to get score for',
-          },
-          limit: {
-            type: 'number',
-            description: 'Number of results to return (default: 10, max: 79)',
-          },
-        },
-      },
-    },
-  },
 ]
 
 /** Names of tools that retrieve data (resolved client-side) vs UI tools (dispatched to dashboard) */
@@ -467,5 +444,4 @@ export const DATA_TOOL_NAMES = new Set([
   'get_arpa_data',
   'get_food_access',
   'get_housing_data',
-  'get_affected_scores',
 ])

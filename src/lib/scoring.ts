@@ -60,7 +60,7 @@ function calcHousingFit(
   if (p.propertyType === 'building') score += 35
   score += p.conditionRating * 8
   score += (p.proximityScore / 100) * 25
-  if (p.zoning?.startsWith('A') || p.zoning?.startsWith('B')) score += 15
+  if (p.zoning.startsWith('A') || p.zoning.startsWith('B')) score += 15
   score += (p.neighborhoodDemand / 100) * 15
   return score
 }

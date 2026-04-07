@@ -109,18 +109,18 @@ export interface VacantProperty {
 
 // ── Shared / GeoJSON ────────────────────────────────────────
 
-export interface GeoJSONFeature<P = Record<string, unknown>> {
+export interface GeoJSONFeature<TProperties = Record<string, unknown>> {
   type: 'Feature'
-  properties: P
+  properties: TProperties
   geometry: {
     type: string
     coordinates: Array<number> | Array<Array<number>> | Array<Array<Array<number>>> | Array<Array<Array<Array<number>>>>
   }
 }
 
-export interface GeoJSONCollection<P = Record<string, unknown>> {
+export interface GeoJSONCollection<TProperties = Record<string, unknown>> {
   type: 'FeatureCollection'
-  features: Array<GeoJSONFeature<P>>
+  features: Array<GeoJSONFeature<TProperties>>
 }
 
 export interface NeighborhoodProperties {
@@ -218,15 +218,3 @@ export interface HousingData {
   neighborhoods: Record<string, NeighborhoodHousing>
 }
 
-// ── Affected Neighborhoods ───────────────────────────────
-
-export interface AffectedScore {
-  nhdId: string
-  name: string
-  composite: number
-  crimeScore: number
-  vacancyScore: number
-  complaintScore: number
-  foodScore: number
-  popDeclineScore: number
-}

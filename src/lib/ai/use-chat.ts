@@ -167,7 +167,7 @@ export function useChat() {
       // Build initial wire messages from conversation history
       const wireMessages: Array<WireMessage> = [
         ...messagesRef.current.map((m) => ({
-          role: m.role as 'user' | 'assistant',
+          role: m.role,
           content: m.toolContext ? `${m.content}\n\n${m.toolContext}` : m.content,
         })),
         { role: 'user' as const, content: text },

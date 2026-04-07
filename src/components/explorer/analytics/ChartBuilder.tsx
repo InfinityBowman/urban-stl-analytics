@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
-import { useData, useExplorer } from '@/components/explorer/ExplorerProvider'
-import {
-  getDataset,
-  getDatasetFields,
-  getGroupedDatasets,
-  GROUP_DESCRIPTIONS,
-} from '@/lib/chart-datasets'
 import { useChartBuilder } from './chart-builder/useChartBuilder'
 import { ChartControls } from './chart-builder/ChartControls'
 import { ChartCanvas } from './chart-builder/ChartCanvas'
+import {
+  GROUP_DESCRIPTIONS,
+  getDataset,
+  getDatasetFields,
+  getGroupedDatasets,
+} from '@/lib/chart-datasets'
+import { useData, useExplorer } from '@/components/explorer/ExplorerProvider'
 import {
   Select,
   SelectContent,

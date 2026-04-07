@@ -41,9 +41,21 @@ export function DetailSection({
   )
 }
 
-export function ScoreBar({ label, score }: { label: string; score: number }) {
-  const color =
-    score >= 70
+export function ScoreBar({
+  label,
+  score,
+  neutral = false,
+}: {
+  label: string
+  score: number
+  /** Use a neutral fill instead of the green/amber/red ramp. Set this when the
+   * sub-score has its own semantic direction (e.g. higher = worse) and the
+   * default ramp would mislead. */
+  neutral?: boolean
+}) {
+  const color = neutral
+    ? 'bg-primary/60'
+    : score >= 70
       ? 'bg-emerald-500'
       : score >= 40
         ? 'bg-amber-500'
@@ -60,7 +72,7 @@ export function ScoreBar({ label, score }: { label: string; score: number }) {
             'h-full rounded-full transition-all duration-500',
             color,
           )}
-          style={{ width: `${Math.min(100, score)}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
         />
       </div>
     </div>

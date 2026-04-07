@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { animate, motion, useMotionValue } from 'motion/react'
-import { useExplorer } from '@/components/explorer/ExplorerProvider'
 import { ComplaintsAnalytics } from './analytics/ComplaintsAnalytics'
 import { TransitAnalytics } from './analytics/TransitAnalytics'
 import { VacancyAnalytics } from './analytics/VacancyAnalytics'
@@ -10,8 +9,8 @@ import { CrimeAnalytics } from './analytics/CrimeAnalytics'
 import { ArpaAnalytics } from './analytics/ArpaAnalytics'
 import { DemographicsAnalytics } from './analytics/DemographicsAnalytics'
 import { HousingAnalytics } from './analytics/HousingAnalytics'
-import { AffectedAnalytics } from './analytics/AffectedAnalytics'
 import type { LayerToggles } from '@/lib/explorer-types'
+import { useExplorer } from '@/components/explorer/ExplorerProvider'
 
 interface TabDef {
   key: string
@@ -35,7 +34,6 @@ const LAYER_TABS: Array<{
   { key: 'arpa', label: 'ARPA Funds', color: 'text-emerald-400', layer: 'arpa', component: () => <ArpaAnalytics /> },
   { key: 'demographics', label: 'Demographics', color: 'text-purple-400', layer: 'demographics', component: () => <DemographicsAnalytics /> },
   { key: 'housing', label: 'Housing', color: 'text-teal-400', layer: 'housing', component: () => <HousingAnalytics /> },
-  { key: 'affected', label: 'Affected', color: 'text-red-400', layer: 'affected', component: () => <AffectedAnalytics /> },
 ]
 
 export function AnalyticsPanel() {

@@ -1,8 +1,7 @@
 import type {
-  AffectedScore,
   ArpaData,
-  CrimeData,
   CSBData,
+  CrimeData,
   FoodDesertProperties,
   GeoJSONCollection,
   HousingData,
@@ -34,7 +33,6 @@ export interface LayerToggles {
   arpa: boolean
   demographics: boolean
   housing: boolean
-  affected: boolean
 }
 
 export interface SubToggles {
@@ -116,7 +114,6 @@ export interface ExplorerData {
   arpaData: ArpaData | null
   demographicsData: Record<string, NeighborhoodDemographics> | null
   housingData: HousingData | null
-  affectedScores: AffectedScore[] | null
 }
 
 // ── Initial State ──────────────────────────────────────────
@@ -131,7 +128,6 @@ export const initialExplorerState: ExplorerState = {
     arpa: false,
     demographics: false,
     housing: false,
-    affected: false,
   },
   subToggles: {
     complaintsMode: 'choropleth',

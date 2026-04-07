@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
+import { DetailRow, DetailSection, MetricCard } from './shared'
 import { haversine, polygonCentroid } from '@/lib/equity'
 import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
-import { DetailRow, DetailSection, MetricCard } from './shared'
 
 export function FoodDesertDetail({ id }: { id: string }) {
   const data = useData()
@@ -43,13 +43,13 @@ export function FoodDesertDetail({ id }: { id: string }) {
   const nearestGrocery = useMemo(() => {
     if (!data.groceryStores || !centroid) return null
     let nearest: { name: string; dist: number } | null = null
-    data.groceryStores.features.forEach((store) => {
+    for (const store of data.groceryStores.features) {
       const [lon, lat] = store.geometry.coordinates as Array<number>
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (!nearest || dist < nearest.dist) {
         nearest = { name: store.properties.name, dist }
       }
-    })
+    }
     return nearest
   }, [data.groceryStores, centroid])
 
@@ -147,7 +147,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
         />
         <MetricCard
           label="Population"
-          value={props.pop?.toLocaleString() ?? '—'}
+          value={props.pop.toLocaleString()}
         />
       </div>
 
@@ -157,7 +157,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
         <DetailRow label="Poverty Rate" value={`${props.poverty_rate}%`} />
         <DetailRow
           label="Median Income"
-          value={`$${props.median_income?.toLocaleString() ?? 'N/A'}`}
+          value={`$${props.median_income.toLocaleString()}`}
         />
         <DetailRow label="No Vehicle" value={`${props.pct_no_vehicle}%`} />
       </DetailSection>

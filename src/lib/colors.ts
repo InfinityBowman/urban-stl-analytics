@@ -1,4 +1,4 @@
-// Choropleth color scale — 7 stops from low to high
+// Choropleth color scale, 7 stops from low to high.
 export const CHORO_COLORS = [
   '#1a1f35',
   '#1b3a5c',
@@ -9,21 +9,12 @@ export const CHORO_COLORS = [
   '#f94144',
 ]
 
-export const CHORO_BREAKS = [0, 500, 1000, 1500, 2000, 3000, 5000]
-
-export function getChoroColor(value: number, breaks = CHORO_BREAKS) {
-  for (let i = breaks.length - 1; i >= 0; i--) {
-    if (value >= breaks[i]) return CHORO_COLORS[i]
-  }
-  return CHORO_COLORS[0]
-}
-
 export function dynamicBreaks(values: Array<number>, steps = CHORO_COLORS.length) {
   const max = Math.max(...values, 1)
   const raw = Array.from({ length: steps }, (_, i) => Math.round(max * (i / steps)))
   // Mapbox "step" expressions require strictly ascending input values.
-  // When max is small, rounding can produce duplicates — deduplicate and keep
-  // ascending order so the expression is always valid.
+  // When max is small, rounding can produce duplicates, so deduplicate and
+  // keep ascending order so the expression is always valid.
   const unique = [...new Set(raw)].sort((a, b) => a - b)
   // Pad back to the expected length with ascending values beyond max
   while (unique.length < steps) {
@@ -78,26 +69,13 @@ export const DEMO_COLORS = [
   '#a855f7',
 ]
 
-// Affected / distress diverging scale — green (low) to red (high), 7 stops
-export const AFFECTED_COLORS = [
-  '#1a9641',
-  '#a6d96a',
-  '#ffffbf',
-  '#fdae61',
-  '#f46d43',
-  '#d73027',
-  '#a50026',
-]
-
-export const AFFECTED_BREAKS = [0, 15, 30, 45, 60, 75, 90]
-
-// Vacancy triage colors — low (red) to high (green), 5 stops
+// Vacancy triage colors, low (red) to high (green), 5 stops.
 export const VACANCY_COLORS = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']
 
 const VACANCY_LABELS = ['Bottom 20%', 'Lower', 'Middle', 'Upper', 'Top 20%']
 
 // Compute percentile-based breaks from an array of scores
-export function percentileBreaks(scores: number[], buckets = 5): number[] {
+export function percentileBreaks(scores: Array<number>, buckets = 5): Array<number> {
   if (scores.length === 0) return Array.from({ length: buckets }, () => 0)
   const sorted = [...scores].sort((a, b) => a - b)
   return Array.from({ length: buckets }, (_, i) => {
@@ -107,36 +85,12 @@ export function percentileBreaks(scores: number[], buckets = 5): number[] {
 }
 
 // Build legend items from percentile breaks
-export function vacancyLegendItems(breaks: number[]) {
+export function vacancyLegendItems(breaks: Array<number>) {
   return VACANCY_COLORS.map((color, i) => {
     const lo = breaks[i] ?? 0
     const hi = i < breaks.length - 1 ? (breaks[i + 1] ?? 100) - 1 : 100
     return { color, label: `${VACANCY_LABELS[i]} (${lo}–${hi})` }
   }).reverse()
-}
-
-// Vacancy triage score color (percentile-aware)
-export function scoreColor(score: number, breaks?: number[]) {
-  if (breaks && breaks.length === 5) {
-    for (let i = breaks.length - 1; i >= 0; i--) {
-      if (score >= breaks[i]) return VACANCY_COLORS[i]
-    }
-    return VACANCY_COLORS[0]
-  }
-  // Fallback to fixed thresholds
-  if (score >= 80) return '#1a9641'
-  if (score >= 60) return '#a6d96a'
-  if (score >= 40) return '#ffffbf'
-  if (score >= 20) return '#fdae61'
-  return '#d7191c'
-}
-
-export function scoreLabel(score: number) {
-  if (score >= 80) return 'High Priority'
-  if (score >= 60) return 'Moderate'
-  if (score >= 40) return 'Low-Moderate'
-  if (score >= 20) return 'Low'
-  return 'Very Low'
 }
 
 // Equity score severity

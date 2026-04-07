@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
-import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import type { FoodDesertProperties } from '@/lib/types'
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import { computeEquityGaps } from '@/lib/equity'
 import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
@@ -82,7 +82,7 @@ export function TransitAnalytics() {
     if (!desertTracts.length) return []
     return desertTracts
       .map((f) => {
-        const props = f.properties as FoodDesertProperties
+        const props = f.properties
         return {
           name: props.name || props.tract_id || 'Unknown',
           value: props.pop || 0,

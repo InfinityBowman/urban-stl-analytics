@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useData, useExplorer } from '../ExplorerProvider'
 import { CHORO_COLORS, dynamicBreaks } from '@/lib/colors'
-import { getHoodComplaintCount, buildHeatmapGeo } from '@/lib/analysis'
+import { buildHeatmapGeo, getHoodComplaintCount } from '@/lib/analysis'
 
 export function ComplaintsLayer() {
   const { state } = useExplorer()

@@ -66,13 +66,6 @@ export function Nav() {
             Housing
           </Link>
           <Link
-            to="/affected"
-            className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground max-md:hidden"
-            activeProps={{ className: 'text-primary' }}
-          >
-            Affected
-          </Link>
-          <Link
             to="/about"
             className="rounded-md px-2.5 py-1 text-[0.8rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
             activeProps={{ className: 'text-primary' }}

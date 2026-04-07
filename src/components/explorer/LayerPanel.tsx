@@ -1,19 +1,18 @@
 import { useMemo } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  Megaphone01Icon,
   AlertDiamondIcon,
-  AlertCircleIcon,
-  Bus01Icon,
   Building03Icon,
+  Bus01Icon,
+  Cancel01Icon,
+  Home01Icon,
+  Megaphone01Icon,
   Store01Icon,
   UserGroupIcon,
-  Home01Icon,
-  Cancel01Icon,
 } from '@hugeicons/core-free-icons'
 import { useData, useExplorer } from './ExplorerProvider'
-import { Slider } from '@/components/ui/slider'
 import type { LayerToggles, SubToggles } from '@/lib/explorer-types'
+import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 
 type IconType = typeof Megaphone01Icon
@@ -73,13 +72,6 @@ const LAYER_CONFIG: Array<{
     color: '#14b8a6',
     desc: 'Median rent & home values by neighborhood',
     icon: Home01Icon,
-  },
-  {
-    key: 'affected',
-    label: 'Affected',
-    color: '#dc2626',
-    desc: 'Composite neighborhood distress scoring',
-    icon: AlertCircleIcon,
   },
 ]
 
@@ -275,8 +267,7 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
     (layerKey === 'foodAccess' && !data.foodDeserts) ||
     (layerKey === 'crime' && !data.crimeData) ||
     (layerKey === 'demographics' && !data.demographicsData) ||
-    (layerKey === 'housing' && !data.housingData) ||
-    (layerKey === 'affected' && !data.affectedScores)
+    (layerKey === 'housing' && !data.housingData)
 
   if (isLoading) return <LoadingIndicator />
 
@@ -295,8 +286,6 @@ function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
       return <DemographicsFilters />
     case 'housing':
       return <HousingFilters />
-    case 'affected':
-      return <AffectedFilters />
   }
 }
 
@@ -781,15 +770,6 @@ function HousingFilters() {
         dispatch({ type: 'SET_SUB_TOGGLE', key: 'housingMetric', value: v })
       }
     />
-  )
-}
-
-function AffectedFilters() {
-  return (
-    <div className="flex items-center gap-1.5 text-[0.62rem] text-foreground/50">
-      <div className="h-1 w-1 rounded-full bg-red-500/60" />
-      Composite distress score
-    </div>
   )
 }
 

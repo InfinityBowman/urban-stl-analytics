@@ -32,9 +32,6 @@ export function buildKpiSnapshot(data: ExplorerData): string {
   if (data.housingData) loaded.push('housing')
   else notLoaded.push('housing')
 
-  if (data.affectedScores && data.affectedScores.length > 0) loaded.push('affected')
-  else notLoaded.push('affected')
-
   const parts: Array<string> = []
   if (loaded.length > 0) parts.push(`Loaded: ${loaded.join(', ')}.`)
   if (notLoaded.length > 0) parts.push(`Still loading: ${notLoaded.join(', ')}.`)

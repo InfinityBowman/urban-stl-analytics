@@ -1,19 +1,5 @@
-import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { useNeighborhoodMetrics } from './useNeighborhoodMetrics'
 import { cn } from '@/lib/utils'
-
-function useNeighborhoodName(id: string | null): string | null {
-  const data = useData()
-  return useMemo(() => {
-    if (!id) return null
-    const hoodKey = id.padStart(2, '0')
-    const hoodFeature = data.neighborhoods?.features.find(
-      (f) => String(f.properties.NHD_NUM).padStart(2, '0') === hoodKey,
-    )
-    return hoodFeature?.properties.NHD_NAME ?? null
-  }, [id, data.neighborhoods])
-}
 
 function DeltaArrow({
   value,
@@ -93,8 +79,8 @@ export function NeighborhoodComparePanel({
 }) {
   const metricsA = useNeighborhoodMetrics(neighborhoodA)
   const metricsB = useNeighborhoodMetrics(neighborhoodB)
-  const nameA = useNeighborhoodName(neighborhoodA)
-  const nameB = useNeighborhoodName(neighborhoodB)
+  const nameA = metricsA?.name ?? null
+  const nameB = metricsB?.name ?? null
 
   if (!neighborhoodA && !neighborhoodB) {
     return (
@@ -103,14 +89,6 @@ export function NeighborhoodComparePanel({
       </div>
     )
   }
-
-  // Compute percentage diff for composite score header
-  const compositeScoreDiff =
-    metricsA && metricsB && metricsB.compositeScore !== 0
-      ? ((metricsA.compositeScore - metricsB.compositeScore) / metricsB.compositeScore) * 100
-      : metricsA && metricsB && metricsA.compositeScore > 0
-        ? 100
-        : 0
 
   return (
     <div className="flex flex-col gap-3 p-3 text-xs">
@@ -135,83 +113,37 @@ export function NeighborhoodComparePanel({
       </div>
 
       {metricsA && metricsB ? (
-        <>
-          <div className="rounded-lg border-2 border-primary/30 bg-muted/50 p-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-[38%] text-right">
-                <span className="text-xl font-extrabold text-blue-400">
-                  {metricsA.compositeScore}
-                </span>
-              </div>
-              <div className="w-[24%] text-center">
-                <div className="text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Score
-                </div>
-              </div>
-              <div className="w-[38%] text-left">
-                <span className="text-xl font-extrabold text-orange-400">
-                  {metricsB.compositeScore}
-                </span>
-                <DeltaArrow value={compositeScoreDiff} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-0.5 border-t border-border/60 pt-2">
-            <CompareRow
-              label="Transit Score"
-              valueA={metricsA.transitScore}
-              valueB={metricsB.transitScore}
-            />
-            <CompareRow
-              label="311 Health"
-              valueA={metricsA.complaintScore}
-              valueB={metricsB.complaintScore}
-            />
-            <CompareRow
-              label="Food Access"
-              valueA={metricsA.foodScore}
-              valueB={metricsB.foodScore}
-            />
-            <CompareRow
-              label="Vacancy (inv)"
-              valueA={metricsA.vacancyScore}
-              valueB={metricsB.vacancyScore}
-            />
-          </div>
-
-          <div className="space-y-0.5 border-t border-border/60 pt-2">
-            <CompareRow
-              label="311 Complaints"
-              valueA={metricsA.totalComplaints}
-              valueB={metricsB.totalComplaints}
-              invertGood
-            />
-            <CompareRow
-              label="Transit Stops"
-              valueA={metricsA.stopsNearby}
-              valueB={metricsB.stopsNearby}
-            />
-            <CompareRow
-              label="Total Trips"
-              valueA={metricsA.totalTrips}
-              valueB={metricsB.totalTrips}
-            />
-            <CompareRow
-              label="Grocery (mi)"
-              valueA={metricsA.nearestGroceryDist}
-              valueB={metricsB.nearestGroceryDist}
-              unit=""
-              invertGood
-            />
-            <CompareRow
-              label="Vacant Props"
-              valueA={metricsA.vacancyCount}
-              valueB={metricsB.vacancyCount}
-              invertGood
-            />
-          </div>
-        </>
+        <div className="space-y-0.5 border-t border-border/60 pt-2">
+          <CompareRow
+            label="311 Complaints"
+            valueA={metricsA.totalComplaints}
+            valueB={metricsB.totalComplaints}
+            invertGood
+          />
+          <CompareRow
+            label="Transit Stops"
+            valueA={metricsA.nearbyStops.length}
+            valueB={metricsB.nearbyStops.length}
+          />
+          <CompareRow
+            label="Total Trips"
+            valueA={metricsA.totalTrips}
+            valueB={metricsB.totalTrips}
+          />
+          <CompareRow
+            label="Grocery (mi)"
+            valueA={metricsA.nearestGroceryDist}
+            valueB={metricsB.nearestGroceryDist}
+            unit=""
+            invertGood
+          />
+          <CompareRow
+            label="Vacant Props"
+            valueA={metricsA.nearbyVacancies.length}
+            valueB={metricsB.nearbyVacancies.length}
+            invertGood
+          />
+        </div>
       ) : (
         <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
           {neighborhoodA && neighborhoodB

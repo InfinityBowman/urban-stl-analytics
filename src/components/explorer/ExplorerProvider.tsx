@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useReducer,
   useRef,
   useState,
@@ -16,7 +15,6 @@ import type {
   LayerToggles,
 } from '@/lib/explorer-types'
 import { initialExplorerState } from '@/lib/explorer-types'
-import { computeAffectedScores } from '@/lib/affected-scoring'
 
 // ── Reducer ────────────────────────────────────────────────
 
@@ -137,7 +135,6 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     arpaData: null,
     demographicsData: null,
     housingData: null,
-    affectedScores: null,
   })
 
   // Track which datasets have been fetched to avoid double-fetch
@@ -289,15 +286,6 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
           })
           .catch(() => markFailed('housing'))
         break
-
-      case 'affected':
-        // Affected scores are computed from already-loaded data —
-        // ensure all dependencies are fetched first.
-        loadLayerData('crime')
-        loadLayerData('vacancy')
-        loadLayerData('complaints')
-        loadLayerData('demographics')
-        break
     }
   }, [])
 
@@ -315,76 +303,9 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     loadLayerData('housing')
   }, [loadLayerData])
 
-  // Trigger lazy loads when layers are toggled on
-  useEffect(() => {
-    ;(Object.keys(state.layers) as Array<keyof LayerToggles>).forEach(
-      (layer) => {
-        if (state.layers[layer]) loadLayerData(layer)
-      },
-    )
-    // Transit analytics needs food desert data for equity gap scoring
-    if (state.layers.transit) loadLayerData('foodAccess')
-  }, [state.layers, loadLayerData])
-
-  // Eagerly load ALL datasets when a neighborhood is selected
-  // so the composite score reflects reality regardless of layer toggles
-  useEffect(() => {
-    if (state.selected?.type === 'neighborhood') {
-      loadLayerData('complaints')
-      loadLayerData('transit')
-      loadLayerData('vacancy')
-      loadLayerData('foodAccess')
-      loadLayerData('crime')
-      loadLayerData('demographics')
-    }
-  }, [state.selected, loadLayerData])
-
-  // Also load data when compare mode neighborhoods are selected
-  useEffect(() => {
-    if (state.compareNeighborhoodA || state.compareNeighborhoodB) {
-      loadLayerData('complaints')
-      loadLayerData('transit')
-      loadLayerData('vacancy')
-      loadLayerData('foodAccess')
-    }
-  }, [state.compareNeighborhoodA, state.compareNeighborhoodB, loadLayerData])
-
-  // Compute affected scores from already-loaded datasets
-  const affectedScores = useMemo(() => {
-    if (
-      !data.demographicsData ||
-      !data.crimeData ||
-      !data.vacancyData ||
-      !data.csbData ||
-      !data.neighborhoods
-    )
-      return null
-    return computeAffectedScores({
-      demographics: data.demographicsData,
-      crime: data.crimeData,
-      vacancies: data.vacancyData,
-      complaints: data.csbData,
-      neighborhoods: data.neighborhoods,
-      groceryStores: data.groceryStores ?? undefined,
-    })
-  }, [
-    data.demographicsData,
-    data.crimeData,
-    data.vacancyData,
-    data.csbData,
-    data.neighborhoods,
-    data.groceryStores,
-  ])
-
-  // Merge computed affected scores into data context
-  const enrichedData = useMemo<ExplorerData>(
-    () => ({ ...data, affectedScores }),
-    [data, affectedScores],
-  )
-
   return (
     <ExplorerContext.Provider value={{ state, dispatch, loadLayerData }}>
-      <DataContext.Provider value={enrichedData}>
+      <DataContext.Provider value={data}>
         <FailedDatasetsContext.Provider value={failedDatasets}>
           {children}
         </FailedDatasetsContext.Provider>

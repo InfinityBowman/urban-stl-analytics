@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { getAvailableYFields } from './useChartBuilder'
 import type { FieldDef } from '@/lib/chart-datasets'
 import type { ChartType, SeriesConfig } from './useChartBuilder'
-import { getAvailableYFields } from './useChartBuilder'
 import {
   Select,
   SelectContent,
@@ -12,15 +12,15 @@ import {
 
 interface ChartControlsProps {
   xAxisField: string
-  series: SeriesConfig[]
-  allFields: FieldDef[]
+  series: Array<SeriesConfig>
+  allFields: Array<FieldDef>
   onSetXAxis: (field: string) => void
   onAddSeries: (field: FieldDef) => void
   onRemoveSeries: (id: string) => void
   onUpdateSeries: (id: string, changes: Partial<SeriesConfig>) => void
 }
 
-const CHART_TYPES: { value: ChartType; label: string }[] = [
+const CHART_TYPES: Array<{ value: ChartType; label: string }> = [
   { value: 'bar', label: 'Bar' },
   { value: 'line', label: 'Line' },
   { value: 'scatter', label: 'Dot' },

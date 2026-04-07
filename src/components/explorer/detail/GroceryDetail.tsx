@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
-import { haversine } from '@/lib/equity'
 import { DetailRow, DetailSection, MetricCard } from './shared'
+import { haversine } from '@/lib/equity'
 
 export function GroceryDetail({ id }: { id: number }) {
   const data = useData()
@@ -13,9 +13,9 @@ export function GroceryDetail({ id }: { id: number }) {
     const [sLon, sLat] = store.geometry.coordinates as Array<number>
     let nearest: { name: string; dist: number; tractId: string } | null = null
 
-    data.foodDeserts.features.forEach((f) => {
+    for (const f of data.foodDeserts.features) {
       const p = f.properties
-      if (!p.lila) return
+      if (!p.lila) continue
       const coords = f.geometry.coordinates as Array<Array<Array<number>>>
       const centroid = coords[0].reduce(
         (acc, pt) => [
@@ -28,7 +28,7 @@ export function GroceryDetail({ id }: { id: number }) {
       if (!nearest || dist < nearest.dist) {
         nearest = { name: p.name, dist, tractId: p.tract_id }
       }
-    })
+    }
 
     return nearest
   }, [store, data.foodDeserts])

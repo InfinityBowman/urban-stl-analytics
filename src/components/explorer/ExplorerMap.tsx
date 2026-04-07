@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useRef, useEffect } from 'react'
-import type { MapStyle } from '@/lib/explorer-types'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useData, useExplorer } from './ExplorerProvider'
 import { NeighborhoodBaseLayer } from './layers/NeighborhoodBaseLayer'
 import { ComplaintsLayer } from './layers/ComplaintsLayer'
@@ -9,12 +8,12 @@ import { FoodAccessLayer } from './layers/FoodAccessLayer'
 import { CrimeLayer } from './layers/CrimeLayer'
 import { DemographicsLayer } from './layers/DemographicsLayer'
 import { HousingLayer } from './layers/HousingLayer'
-import { AffectedLayer } from './layers/AffectedLayer'
 import { TimeRangeSlider } from './TimeRangeSlider'
+import type { MapStyle } from '@/lib/explorer-types'
 import { MapProvider } from '@/components/map/MapProvider'
 import {
-  MapLegend,
   GradientSection,
+  MapLegend,
   SwatchSection,
   SymbolSection,
 } from '@/components/map/MapLegend'
@@ -24,7 +23,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-  AFFECTED_COLORS,
   CHORO_COLORS,
   CRIME_COLORS,
   DEMO_COLORS,
@@ -51,7 +49,7 @@ function MapStyleToggle() {
 
   return (
     <div className="absolute top-2.5 left-2.5 z-10 flex gap-0.5 rounded-md border border-border/60 bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-      {(Object.keys(MAP_STYLES) as MapStyle[]).map((style) => (
+      {(Object.keys(MAP_STYLES) as Array<MapStyle>).map((style) => (
         <button
           key={style}
           onClick={() => dispatch({ type: 'SET_MAP_STYLE', style })}
@@ -270,8 +268,7 @@ export function ExplorerMap() {
     state.layers.vacancy ||
     state.layers.foodAccess ||
     state.layers.transit ||
-    state.layers.housing ||
-    state.layers.affected
+    state.layers.housing
 
   return (
     <MapProvider
@@ -288,7 +285,6 @@ export function ExplorerMap() {
       {state.layers.foodAccess && <FoodAccessLayer />}
       {state.layers.demographics && <DemographicsLayer />}
       {state.layers.housing && <HousingLayer />}
-      {state.layers.affected && <AffectedLayer />}
 
       {hasLegend && (
         <MapLegend>
@@ -432,9 +428,6 @@ export function ExplorerMap() {
           )}
           {state.layers.housing && (
             <GradientSection title={housingTitle} colors={CHORO_COLORS} />
-          )}
-          {state.layers.affected && (
-            <GradientSection title="Distress Score" colors={AFFECTED_COLORS} />
           )}
         </MapLegend>
       )}

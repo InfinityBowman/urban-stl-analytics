@@ -16,7 +16,7 @@ export interface ActionResult {
 }
 
 /** Fuzzy-match a user/AI string against a list of known values (case-insensitive, substring) */
-function fuzzyMatch(input: string, candidates: string[]): string | null {
+function fuzzyMatch(input: string, candidates: Array<string>): string | null {
   const lower = input.toLowerCase()
   // Exact match first
   const exact = candidates.find((c) => c.toLowerCase() === lower)
@@ -86,7 +86,7 @@ export function executeToolCall(
       const resolveCategory = (
         argKey: string,
         toggleKey: keyof SubToggles,
-        candidates: string[],
+        candidates: Array<string>,
         layerKey: keyof LayerToggles | null,
         label: string,
       ) => {
@@ -114,7 +114,7 @@ export function executeToolCall(
       const setEnum = (
         argKey: string,
         toggleKey: keyof SubToggles,
-        valid: string[],
+        valid: Array<string>,
         layerKey: keyof LayerToggles | null,
         label: string,
       ) => {
@@ -382,8 +382,8 @@ export function executeToolCall(
         dispatch({ type: 'TOGGLE_ANALYTICS' })
       }
 
-      // Auto-enable the associated layer (chart tab has no layer)
-      // arpa intentionally omitted — no map layer
+      // Auto-enable the associated layer (chart tab has no layer).
+      // arpa intentionally omitted (no map layer).
       const tabLayerMap: Record<string, keyof LayerToggles> = {
         complaints: 'complaints',
         crime: 'crime',
@@ -391,7 +391,6 @@ export function executeToolCall(
         vacancy: 'vacancy',
         demographics: 'demographics',
         housing: 'housing',
-        affected: 'affected',
       }
       const layerKey = tabLayerMap[tab]
       if (layerKey && !state.layers[layerKey]) {

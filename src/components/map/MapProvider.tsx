@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react'
-import Map, { NavigationControl, GeolocateControl } from 'react-map-gl/mapbox'
+import Map, { GeolocateControl, NavigationControl } from 'react-map-gl/mapbox'
 import type { ReactNode } from 'react'
 import type { MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'

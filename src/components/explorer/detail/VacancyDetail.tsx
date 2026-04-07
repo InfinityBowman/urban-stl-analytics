@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { useData } from '../ExplorerProvider'
-import { scoreColor } from '@/lib/colors'
+import { DetailRow, DetailSection, MetricCard, ScoreBar } from './shared'
 import { cn } from '@/lib/utils'
-import { DetailRow, DetailSection, ScoreBar, MetricCard } from './shared'
 
 const useLabels: Record<string, string> = {
   housing: 'Affordable Housing',
@@ -32,6 +31,18 @@ const conditionColors: Record<number, string> = {
   5: 'text-emerald-500',
 }
 
+// Friendly labels for the triage score breakdown. The raw keys ("condition",
+// "complaintDensity", etc.) collide visually with other fields on the panel,
+// so each label is reworded to make its semantic direction unambiguous.
+const breakdownLabels: Record<string, string> = {
+  condition: 'Building Distress',
+  complaintDensity: 'Complaint Pressure',
+  lotSize: 'Lot Size',
+  ownership: 'Acquisition',
+  proximity: 'Proximity Activity',
+  taxDelinquency: 'Tax Delinquency',
+}
+
 export function VacancyDetail({ id }: { id: number }) {
   const data = useData()
 
@@ -51,13 +62,11 @@ export function VacancyDetail({ id }: { id: number }) {
       {/* Address */}
       <div className="text-base font-bold">{property.address}</div>
 
-      {/* Key metrics */}
       <div className="flex gap-2">
         <MetricCard
           label="Triage"
           value={property.triageScore}
           subtext="/100"
-          colorHex={scoreColor(property.triageScore)}
         />
         <MetricCard
           label="Condition"
@@ -131,11 +140,10 @@ export function VacancyDetail({ id }: { id: number }) {
         />
       </DetailSection>
 
-      {/* Score breakdown */}
       <DetailSection title="Score Breakdown" color="text-amber-400">
         {Object.entries(property.scoreBreakdown).map(([key, val]) => (
           <div key={key} className="py-1">
-            <ScoreBar label={key.charAt(0).toUpperCase() + key.slice(1)} score={val} />
+            <ScoreBar label={breakdownLabels[key] ?? key} score={val} neutral />
           </div>
         ))}
       </DetailSection>

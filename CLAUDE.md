@@ -5,15 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-pnpm dev            # Dev server on http://localhost:3000
+pnpm dev            # Dev server via portless at http://urbanstl.localhost:1355
 pnpm build          # Production build (.output/ for Node, dist/ for CF Workers)
 pnpm test           # Run tests (vitest run)
 pnpm lint           # ESLint
 pnpm format         # Prettier
 pnpm check          # Prettier --write + ESLint --fix
 pnpm deploy         # Build + deploy to Cloudflare Workers
-pnpm data:fetch     # Download raw datasets → python/data/raw/
-pnpm data:clean     # Process raw → public/data/ (frontend-ready)
+pnpm data:fetch     # Download raw datasets -> python/data/raw/
+pnpm data:clean     # Process raw -> public/data/ (frontend-ready)
 pnpm data:sync      # Install Python deps (uv sync)
 pnpm data:pipeline  # Full pipeline: sync + fetch + clean
 ```
@@ -29,8 +29,8 @@ The `python/` directory contains a uv-managed Python project for data pipelines 
 ```bash
 cd python/
 uv sync                              # Install deps into .venv
-uv run python scripts/fetch_raw.py   # Download raw datasets → data/raw/
-uv run python scripts/clean_data.py  # Process raw → public/data/ (frontend-ready)
+uv run python scripts/fetch_raw.py   # Download raw datasets -> data/raw/
+uv run python scripts/clean_data.py  # Process raw -> public/data/ (frontend-ready)
 uv run jupyter lab                   # Launch notebooks
 ```
 
@@ -42,15 +42,14 @@ This is a St. Louis urban analytics dashboard combining three hackathon prototyp
 
 ### Routing
 
-File-based routing via TanStack Router. Route tree is auto-generated in `src/routeTree.gen.ts` — do not edit manually. Two layout groups: `_bare` (no nav, used for landing) and `_app` (nav shell).
+File-based routing via TanStack Router. Route tree is auto-generated in `src/routeTree.gen.ts` - do not edit manually. Two layout groups: `_bare` (no nav, used for landing) and `_app` (nav shell).
 
-- `/` — Landing page (`_bare` layout)
-- `/explore` — Unified Map Explorer (fullscreen map with layer toggles, detail panel, analytics drawer, AI command bar)
-- `/population` — Population Trends (3-tab census dashboard: overview, change 2010→2020, demographics)
-- `/housing` — Housing Prices (ACS choropleth map + stats, toggle rent/home value)
-- `/affected` — Affected Neighborhoods (composite distress scoring + choropleth map)
-- `/about` — About page
-- `/api/chat` — AI chat server endpoint (POST, uses OpenRouter)
+- `/` - Landing page (`_bare` layout)
+- `/explore` - Unified Map Explorer (fullscreen map with layer toggles, detail panel, analytics drawer, AI command bar)
+- `/population` - Population Trends (3-tab census dashboard: overview, change 2010->2020, demographics)
+- `/housing` - Housing Prices (ACS choropleth map + stats, toggle rent/home value)
+- `/about` - About page
+- `/api/chat` - AI chat server endpoint (POST, uses OpenRouter)
 
 ### Data Flow
 
@@ -62,25 +61,24 @@ The data pipeline is split into two scripts: `python/scripts/fetch_raw.py` downl
 
 ### Code Organization
 
-- `src/routes/` — `_bare/index.tsx` (landing), `_app/explore.tsx` (Map Explorer), `_app/housing.tsx`, `_app/affected.tsx`, `_app/population.tsx`, `_app/about.tsx`, `api/chat.ts` (AI endpoint)
-- `src/components/explorer/` — Core app: `MapExplorer.tsx` (CSS grid layout), `ExplorerProvider.tsx` (state + data), `ExplorerMap.tsx` (Mapbox canvas + click handler), `LayerPanel.tsx` (left rail), `DetailPanel.tsx` (right rail), `AnalyticsPanel.tsx` (bottom drawer), `CommandBar.tsx` (AI chat), `TimeRangeSlider.tsx` (temporal filter)
-- `src/components/explorer/layers/` — Map layers: `NeighborhoodBaseLayer`, `ComplaintsLayer`, `CrimeLayer`, `TransitLayer`, `VacancyLayer`, `FoodAccessLayer`, `DemographicsLayer`, `HousingLayer`, `AffectedLayer`, `StandaloneNeighborhoodLayer`
-- `src/components/explorer/detail/` — Entity detail views: `NeighborhoodDetail`, `NeighborhoodComparePanel`, `VacancyDetail`, `StopDetail`, `GroceryDetail`, `FoodDesertDetail`, `useNeighborhoodMetrics` hook
-- `src/components/explorer/analytics/` — Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `HousingAnalytics`, `AffectedAnalytics`, `NeighborhoodAnalytics`, `MiniKpi`, `ChartBuilder`, `chart-builder/` (ChartCanvas, ChartControls, useChartBuilder)
-- `src/components/population/` — Population page: `PopulationDashboard` (3-tab layout), `PopulationKpiGrid`, `PopulationChangeTable`, `RaceBreakdownChart`
-- `src/components/housing/` — Housing page: `HousingDashboard` (KPI cards + bar charts), `HousingKpiCards`
-- `src/components/affected/` — Affected page: `AffectedDashboard` (KPI cards + ranked list), `AffectedNeighborhoodRow`, `AffectedKpiCards`
-- `src/components/landing/` — `LandingPage`
-- `src/components/about/` — `AboutPage`
-- `src/components/map/` — `MapProvider` (Mapbox wrapper), `MapLegend`
-- `src/components/charts/` — Reusable charts: `TimeSeriesChart`, `CategoryBarChart`, `HourlyChart`, `WeekdayChart`, `WeatherInsights`
-- `src/components/ui/` — shadcn/ui primitives
-- `src/lib/` — Business logic: `analysis.ts` (hotspot detection, weather correlation), `equity.ts` (haversine, equity scoring), `scoring.ts` (vacancy triage), `affected-scoring.ts` (composite distress scores), `colors.ts` (choropleth scales), `types.ts` (all interfaces), `explorer-types.ts` (state/action types), `chart-datasets.ts` (ChartBuilder datasets), `neighborhood-metrics.ts`
-- `src/lib/ai/` — AI system: `system-prompt.ts`, `tools.ts`, `use-chat.ts`, `action-executor.ts`, `data-executor.ts`, `kpi-snapshot.ts`, `neighborhood-resolver.ts`, `command-bar-events.ts`
+- `src/routes/` - `_bare/index.tsx` (landing), `_app/explore.tsx` (Map Explorer), `_app/housing.tsx`, `_app/population.tsx`, `_app/about.tsx`, `api/chat.ts` (AI endpoint)
+- `src/components/explorer/` - Core app: `MapExplorer.tsx` (CSS grid layout), `ExplorerProvider.tsx` (state + data), `ExplorerMap.tsx` (Mapbox canvas + click handler), `LayerPanel.tsx` (left rail), `DetailPanel.tsx` (right rail), `AnalyticsPanel.tsx` (bottom drawer), `CommandBar.tsx` (AI chat), `TimeRangeSlider.tsx` (temporal filter)
+- `src/components/explorer/layers/` - Map layers: `NeighborhoodBaseLayer`, `ComplaintsLayer`, `CrimeLayer`, `TransitLayer`, `VacancyLayer`, `FoodAccessLayer`, `DemographicsLayer`, `HousingLayer`, `StandaloneNeighborhoodLayer`
+- `src/components/explorer/detail/` - Entity detail views: `NeighborhoodDetail`, `NeighborhoodComparePanel`, `VacancyDetail`, `StopDetail`, `GroceryDetail`, `FoodDesertDetail`, `useNeighborhoodMetrics` hook
+- `src/components/explorer/analytics/` - Analytics modules: `ComplaintsAnalytics`, `CrimeAnalytics`, `TransitAnalytics`, `VacancyAnalytics`, `ArpaAnalytics`, `DemographicsAnalytics`, `HousingAnalytics`, `NeighborhoodAnalytics`, `MiniKpi`, `ChartBuilder`, `chart-builder/` (ChartCanvas, ChartControls, useChartBuilder)
+- `src/components/population/` - Population page: `PopulationDashboard` (3-tab layout), `PopulationKpiGrid`, `PopulationChangeTable`, `RaceBreakdownChart`
+- `src/components/housing/` - Housing page: `HousingDashboard` (KPI cards + bar charts), `HousingKpiCards`
+- `src/components/landing/` - `LandingPage`
+- `src/components/about/` - `AboutPage`
+- `src/components/map/` - `MapProvider` (Mapbox wrapper), `MapLegend`
+- `src/components/charts/` - Reusable charts: `TimeSeriesChart`, `CategoryBarChart`, `HourlyChart`, `WeekdayChart`, `WeatherInsights`
+- `src/components/ui/` - shadcn/ui primitives
+- `src/lib/` - Business logic: `analysis.ts` (hotspot detection, weather correlation), `equity.ts` (haversine, equity scoring), `scoring.ts` (vacancy triage), `colors.ts` (choropleth scales), `types.ts` (all interfaces), `explorer-types.ts` (state/action types), `chart-datasets.ts` (ChartBuilder datasets), `neighborhood-metrics.ts` (raw per-neighborhood counts and centroids)
+- `src/lib/ai/` - AI system: `system-prompt.ts`, `tools.ts`, `use-chat.ts`, `action-executor.ts`, `data-executor.ts`, `kpi-snapshot.ts`, `neighborhood-resolver.ts`, `command-bar-events.ts`
 
 ### Map Setup
 
-Maps use Mapbox GL via `react-map-gl`. The shared wrapper is `MapProvider` centered on STL (38.635, -90.245, zoom 11.5) with switchable styles (streets, light, dark, satellite — default: streets-v12). Layers are rendered using `<Source>` and `<Layer>` components. Click handling uses `queryRenderedFeatures` with priority ordering (vacancy > stops > grocery > food desert > neighborhood).
+Maps use Mapbox GL via `react-map-gl`. The shared wrapper is `MapProvider` centered on STL (38.635, -90.245, zoom 11.5) with switchable styles (streets, light, dark, satellite - default: streets-v12). Layers are rendered using `<Source>` and `<Layer>` components. Click handling uses `queryRenderedFeatures` with priority ordering (vacancy > stops > grocery > food desert > neighborhood).
 
 ## Documentation
 

@@ -2,17 +2,16 @@ import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  Megaphone01Icon,
   AlertDiamondIcon,
-  Bus01Icon,
+  ArrowDown01Icon,
+  ArrowRight01Icon,
   Building03Icon,
-  Store01Icon,
-  UserGroupIcon,
+  Bus01Icon,
   DollarCircleIcon,
   Home01Icon,
-  AlertCircleIcon,
-  ArrowRight01Icon,
-  ArrowDown01Icon,
+  Megaphone01Icon,
+  Store01Icon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons'
 
 const DATASETS = [
@@ -104,17 +103,6 @@ const DATASETS = [
     source: 'U.S. Census Bureau ACS',
     coverage: '2019 – 2023',
   },
-  {
-    name: 'Affected Neighborhoods',
-    icon: AlertCircleIcon,
-    color: '#dc2626',
-    stat: '79',
-    statLabel: 'neighborhoods scored',
-    description:
-      'Composite distress scores combining crime, vacancy, complaints, food access, and population decline.',
-    source: 'Derived (multi-dataset)',
-    coverage: 'Cross-dataset',
-  },
 ]
 
 const stagger = {
@@ -168,7 +156,7 @@ export function LandingPage() {
             variants={fadeUp}
             className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl"
           >
-            Nine datasets.{' '}
+            Eight datasets.{' '}
             <span className="bg-linear-to-r from-[#4f6ef7] to-[#7b93f9] bg-clip-text text-transparent">
               One city.
             </span>
@@ -229,7 +217,7 @@ export function LandingPage() {
           className="mx-auto flex max-w-5xl items-center justify-between px-8 py-10 sm:px-12"
         >
           {[
-            { value: '9', label: 'Datasets' },
+            { value: '8', label: 'Datasets' },
             { value: '6', label: 'Agencies' },
             { value: '79', label: 'Neighborhoods' },
             { value: '100K+', label: 'Data Points' },

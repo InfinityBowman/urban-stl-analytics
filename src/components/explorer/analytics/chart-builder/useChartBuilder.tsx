@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer } from 'react'
 import type { ReactNode } from 'react'
-import { CATEGORY_COLORS } from '@/lib/colors'
 import type { DatasetDef, FieldDef, PresetConfig } from '@/lib/chart-datasets'
+import { CATEGORY_COLORS } from '@/lib/colors'
 
 export type ChartType = 'bar' | 'line' | 'scatter'
 
@@ -17,13 +17,13 @@ export interface SeriesConfig {
 export interface ChartBuilderState {
   datasetKey: string
   xAxisField: string
-  series: SeriesConfig[]
+  series: Array<SeriesConfig>
   activePreset: string | null
 }
 
 export type ChartBuilderAction =
-  | { type: 'SET_DATASET'; datasetKey: string; fields: FieldDef[]; def: DatasetDef }
-  | { type: 'APPLY_PRESET'; preset: PresetConfig; fields: FieldDef[] }
+  | { type: 'SET_DATASET'; datasetKey: string; fields: Array<FieldDef>; def: DatasetDef }
+  | { type: 'APPLY_PRESET'; preset: PresetConfig; fields: Array<FieldDef> }
   | { type: 'SET_X_AXIS'; field: string }
   | { type: 'ADD_SERIES'; field: FieldDef }
   | { type: 'REMOVE_SERIES'; id: string }
@@ -33,7 +33,7 @@ function uid() {
   return `s${Math.random().toString(36).slice(2, 9)}`
 }
 
-function pickColor(existing: SeriesConfig[]): string {
+function pickColor(existing: Array<SeriesConfig>): string {
   const usedColors = new Set(existing.map((s) => s.color))
   return (
     CATEGORY_COLORS.find((c) => !usedColors.has(c)) ?? CATEGORY_COLORS[0]
@@ -48,9 +48,9 @@ function smartChartType(field: FieldDef, xField: FieldDef | undefined): ChartTyp
 
 function buildSeriesFromPreset(
   preset: PresetConfig,
-  fields: FieldDef[],
-): { xAxisField: string; series: SeriesConfig[] } {
-  const series: SeriesConfig[] = []
+  fields: Array<FieldDef>,
+): { xAxisField: string; series: Array<SeriesConfig> } {
+  const series: Array<SeriesConfig> = []
   for (let i = 0; i < preset.series.length; i++) {
     const ps = preset.series[i]
     const fieldDef = fields.find((f) => f.key === ps.fieldKey)
@@ -68,9 +68,9 @@ function buildSeriesFromPreset(
 }
 
 function autoSelect(
-  fields: FieldDef[],
+  fields: Array<FieldDef>,
   def?: DatasetDef,
-): { xAxisField: string; series: SeriesConfig[]; activePreset: string | null } {
+): { xAxisField: string; series: Array<SeriesConfig>; activePreset: string | null } {
   // If preset available, use the first one
   if (def?.presets?.length) {
     const preset = def.presets[0]
@@ -84,10 +84,10 @@ function autoSelect(
     fields.find((f) => f.type === 'category') ??
     fields[0]
   const firstNumeric = fields.find(
-    (f) => f.type === 'number' && f.key !== xField?.key,
+    (f) => f.type === 'number' && f.key !== xField.key,
   )
 
-  const series: SeriesConfig[] = firstNumeric
+  const series: Array<SeriesConfig> = firstNumeric
     ? [
         {
           id: uid(),
@@ -100,7 +100,7 @@ function autoSelect(
       ]
     : []
 
-  return { xAxisField: xField?.key ?? '', series, activePreset: null }
+  return { xAxisField: xField.key, series, activePreset: null }
 }
 
 function reducer(
@@ -193,10 +193,10 @@ export function useChartBuilder(): [ChartBuilderState, React.Dispatch<ChartBuild
 }
 
 export function getAvailableYFields(
-  allFields: FieldDef[],
+  allFields: Array<FieldDef>,
   xAxisField: string,
-  existingSeries: SeriesConfig[],
-): FieldDef[] {
+  existingSeries: Array<SeriesConfig>,
+): Array<FieldDef> {
   const usedKeys = new Set(existingSeries.map((s) => s.fieldKey))
   return allFields.filter(
     (f) => f.type === 'number' && f.key !== xAxisField && !usedKeys.has(f.key),
