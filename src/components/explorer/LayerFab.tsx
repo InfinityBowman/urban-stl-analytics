@@ -1,23 +1,28 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Layers01Icon } from '@hugeicons/core-free-icons'
-import { useExplorer } from './ExplorerProvider'
+import { useShallow } from 'zustand/shallow'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { cn } from '@/lib/utils'
 
 export function LayerFab() {
-  const { state, dispatch } = useExplorer()
-
-  const activeCount = Object.values(state.layers).filter(Boolean).length
+  const { activeCount, detailPanelOpen, openMobileLayerDrawer } = useExplorerStore(
+    useShallow((s) => ({
+      activeCount: Object.values(s.layers).filter(Boolean).length,
+      detailPanelOpen: s.detailPanelOpen,
+      openMobileLayerDrawer: s.openMobileLayerDrawer,
+    })),
+  )
 
   return (
     <button
-      onClick={() => dispatch({ type: 'OPEN_MOBILE_LAYER_DRAWER' })}
+      onClick={openMobileLayerDrawer}
       className={cn(
         'md:hidden',
         'absolute bottom-6 left-4 z-20',
         'flex h-11 w-11 items-center justify-center rounded-full',
         'border border-border/60 bg-background/95 shadow-lg backdrop-blur-sm',
         'transition-all duration-150 active:scale-95',
-        state.detailPanelOpen && 'max-md:pointer-events-none max-md:opacity-0',
+        detailPanelOpen && 'max-md:pointer-events-none max-md:opacity-0',
       )}
       aria-label="Open layers panel"
     >

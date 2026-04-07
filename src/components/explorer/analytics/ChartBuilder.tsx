@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useShallow } from 'zustand/shallow'
 import { useChartBuilder } from './chart-builder/useChartBuilder'
 import { ChartControls } from './chart-builder/ChartControls'
 import { ChartCanvas } from './chart-builder/ChartCanvas'
@@ -8,7 +9,7 @@ import {
   getDatasetFields,
   getGroupedDatasets,
 } from '@/lib/chart-datasets'
-import { useData, useExplorer } from '@/components/explorer/ExplorerProvider'
+import { getDataSnapshot, useDataStore } from '@/stores/data-store'
 import {
   Select,
   SelectContent,
@@ -20,8 +21,28 @@ import {
 } from '@/components/ui/select'
 
 export function ChartBuilder() {
-  const { loadLayerData } = useExplorer()
-  const data = useData()
+  // ChartBuilder's extract functions take the full ExplorerData, so it
+  // legitimately needs every slice. useShallow gives us a single subscription
+  // that only re-renders when one of the referenced slices actually changes.
+  const data = useDataStore(
+    useShallow((s) => ({
+      neighborhoods: s.neighborhoods,
+      routes: s.routes,
+      groceryStores: s.groceryStores,
+      csbData: s.csbData,
+      trendsData: s.trendsData,
+      stops: s.stops,
+      shapes: s.shapes,
+      stopStats: s.stopStats,
+      foodDeserts: s.foodDeserts,
+      vacancyData: s.vacancyData,
+      crimeData: s.crimeData,
+      arpaData: s.arpaData,
+      demographicsData: s.demographicsData,
+      housingData: s.housingData,
+    })),
+  )
+
   const [state, dispatch] = useChartBuilder()
 
   const grouped = useMemo(() => getGroupedDatasets(), [])
@@ -42,8 +63,9 @@ export function ChartBuilder() {
     const def = getDataset(key)
     if (!def) return
     // Ensure data is loaded for this dataset (safety net — prefetch usually handles it)
-    def.requiredLayers.forEach((l) => loadLayerData(l))
-    const fields = getDatasetFields(def, data)
+    const loadLayer = useDataStore.getState().loadLayer
+    def.requiredLayers.forEach((l) => loadLayer(l))
+    const fields = getDatasetFields(def, getDataSnapshot())
     dispatch({ type: 'SET_DATASET', datasetKey: key, fields, def })
   }
 

@@ -1,4 +1,4 @@
-import { ExplorerProvider, useExplorer } from './ExplorerProvider'
+import { ExplorerProvider } from './ExplorerProvider'
 import { ChartBuilderProvider } from './analytics/chart-builder/useChartBuilder'
 import { ExplorerMap } from './ExplorerMap'
 import { LayerPanel } from './LayerPanel'
@@ -7,10 +7,11 @@ import { AnalyticsPanel } from './AnalyticsPanel'
 import { CommandBar } from './CommandBar'
 import { LayerFab } from './LayerFab'
 import { MobileLayerDrawer } from './MobileLayerDrawer'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { cn } from '@/lib/utils'
 
 function ExplorerLayout() {
-  const { state } = useExplorer()
+  const detailPanelOpen = useExplorerStore((s) => s.detailPanelOpen)
 
   return (
     <div
@@ -39,7 +40,7 @@ function ExplorerLayout() {
             'max-md:z-20 max-md:w-full max-md:h-[50vh] max-md:max-h-[50vh]',
             'max-md:border-l-0 max-md:border-t max-md:rounded-t-xl',
             'max-md:overflow-hidden',
-            state.detailPanelOpen
+            detailPanelOpen
               ? 'translate-x-0 max-md:translate-y-0'
               : 'translate-x-full max-md:translate-x-0 max-md:translate-y-full',
           )}

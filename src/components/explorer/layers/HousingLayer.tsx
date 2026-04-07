@@ -1,18 +1,19 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { CHORO_COLORS, dynamicBreaks } from '@/lib/colors'
 
 export function HousingLayer() {
-  const { state } = useExplorer()
-  const data = useData()
-  const metric = state.subToggles.housingMetric
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
+  const housingData = useDataStore((s) => s.housingData)
+  const metric = useExplorerStore((s) => s.subToggles.housingMetric)
 
   const choroplethGeo = useMemo(() => {
-    if (!data.neighborhoods || !data.housingData) return null
-    const features = data.neighborhoods.features.map((f) => {
+    if (!neighborhoods || !housingData) return null
+    const features = neighborhoods.features.map((f) => {
       const nhdNum = String(f.properties.NHD_NUM).padStart(2, '0')
-      const nhd = data.housingData!.neighborhoods[nhdNum]
+      const nhd = housingData.neighborhoods[nhdNum]
       const value =
         metric === 'rent'
           ? (nhd?.medianRent ?? 0)
@@ -23,7 +24,7 @@ export function HousingLayer() {
       }
     })
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.housingData, metric])
+  }, [neighborhoods, housingData, metric])
 
   const breaks = useMemo(() => {
     if (!choroplethGeo) return dynamicBreaks([])
@@ -41,7 +42,7 @@ export function HousingLayer() {
     ...positiveBreaks.flatMap((b, i) => [b, CHORO_COLORS[i % CHORO_COLORS.length]]),
   ]
 
-  if (!data.housingData || !data.neighborhoods) return null
+  if (!housingData || !neighborhoods) return null
 
   return (
     <>

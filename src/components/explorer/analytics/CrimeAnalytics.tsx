@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
+import { useDataStore } from '@/stores/data-store'
 import { TimeSeriesChart } from '@/components/charts/TimeSeriesChart'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import { HourlyChart } from '@/components/charts/HourlyChart'
@@ -8,12 +8,12 @@ import { WeekdayChart } from '@/components/charts/WeekdayChart'
 import { movingAverage } from '@/lib/analysis'
 
 export function CrimeAnalytics() {
-  const data = useData()
-  const failed = useFailedDatasets()
+  const crimeData = useDataStore((s) => s.crimeData)
+  const failed = useDataStore((s) => s.failedDatasets)
 
   const kpis = useMemo(() => {
-    if (!data.crimeData) return null
-    const d = data.crimeData
+    if (!crimeData) return null
+    const d = crimeData
     const days = Object.keys(d.dailyCounts).length || 365
     return {
       total: d.totalIncidents,
@@ -21,28 +21,28 @@ export function CrimeAnalytics() {
       felonies: d.totalFelonies,
       firearms: d.totalFirearms,
     }
-  }, [data.crimeData])
+  }, [crimeData])
 
   const dailyChart = useMemo(() => {
-    if (!data.crimeData) return []
-    const entries = Object.entries(data.crimeData.dailyCounts).sort()
+    if (!crimeData) return []
+    const entries = Object.entries(crimeData.dailyCounts).sort()
     const values = entries.map((e) => e[1])
     const ma7 = movingAverage(values)
     return entries.map((e, i) => ({ date: e[0], value: e[1], ma7: ma7[i] }))
-  }, [data.crimeData])
+  }, [crimeData])
 
   const categoryChart = useMemo(
     () =>
-      data.crimeData
-        ? Object.entries(data.crimeData.categories)
+      crimeData
+        ? Object.entries(crimeData.categories)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 12)
             .map(([name, value]) => ({ name, value }))
         : [],
-    [data.crimeData],
+    [crimeData],
   )
 
-  if (!data.crimeData || !kpis) {
+  if (!crimeData || !kpis) {
     if (failed.has('crime')) {
       return (
         <div className="text-xs text-muted-foreground">Crime data unavailable.</div>
@@ -63,7 +63,7 @@ export function CrimeAnalytics() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[180px] overflow-hidden">
+        <div className="h-45 overflow-hidden">
           <TimeSeriesChart
             data={dailyChart}
             barLabel="Daily"
@@ -71,7 +71,7 @@ export function CrimeAnalytics() {
             height={180}
           />
         </div>
-        <div className="h-[180px] overflow-hidden">
+        <div className="h-45 overflow-hidden">
           <CategoryBarChart data={categoryChart} horizontal height={180} valueLabel="Incidents" />
         </div>
       </div>
@@ -81,16 +81,15 @@ export function CrimeAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             By Hour
           </div>
-          <HourlyChart data={data.crimeData.hourly} height={160} valueLabel="Incidents" />
+          <HourlyChart data={crimeData.hourly} height={160} valueLabel="Incidents" />
         </div>
         <div className="overflow-hidden">
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             By Day
           </div>
-          <WeekdayChart weekday={data.crimeData.weekday} height={160} valueLabel="Incidents" />
+          <WeekdayChart weekday={crimeData.weekday} height={160} valueLabel="Incidents" />
         </div>
       </div>
     </div>
   )
 }
-

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { DetailRow, DetailSection, MetricCard, ScoreBar } from './shared'
+import { useDataStore } from '@/stores/data-store'
 import { cn } from '@/lib/utils'
 
 const useLabels: Record<string, string> = {
@@ -44,11 +44,11 @@ const breakdownLabels: Record<string, string> = {
 }
 
 export function VacancyDetail({ id }: { id: number }) {
-  const data = useData()
+  const vacancyData = useDataStore((s) => s.vacancyData)
 
   const property = useMemo(
-    () => data.vacancyData?.find((p) => p.id === id) ?? null,
-    [data.vacancyData, id],
+    () => vacancyData?.find((p) => p.id === id) ?? null,
+    [vacancyData, id],
   )
 
   if (!property) {

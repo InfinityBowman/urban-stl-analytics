@@ -1,23 +1,24 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { CRIME_COLORS, dynamicBreaks } from '@/lib/colors'
 import { buildHeatmapGeo } from '@/lib/analysis'
 
 export function CrimeLayer() {
-  const { state } = useExplorer()
-  const data = useData()
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
+  const crimeData = useDataStore((s) => s.crimeData)
 
-  const mode = state.subToggles.crimeMode
-  const category = state.subToggles.crimeCategory
-  const timeStart = state.subToggles.timeRangeStart
-  const timeEnd = state.subToggles.timeRangeEnd
+  const mode = useExplorerStore((s) => s.subToggles.crimeMode)
+  const category = useExplorerStore((s) => s.subToggles.crimeCategory)
+  const timeStart = useExplorerStore((s) => s.subToggles.timeRangeStart)
+  const timeEnd = useExplorerStore((s) => s.subToggles.timeRangeEnd)
   const timeActive = timeStart !== '' && timeEnd !== ''
 
   // Filter heatmap points by category and time range
   const filteredPoints = useMemo(() => {
-    if (!data.crimeData) return []
-    let points = data.crimeData.heatmapPoints
+    if (!crimeData) return []
+    let points = crimeData.heatmapPoints
     if (category !== 'all') {
       points = points.filter((p) => p[2] === category)
     }
@@ -28,11 +29,11 @@ export function CrimeLayer() {
       })
     }
     return points
-  }, [data.crimeData, category, timeActive, timeStart, timeEnd])
+  }, [crimeData, category, timeActive, timeStart, timeEnd])
 
   // Choropleth: color neighborhoods by crime count
   const choroplethGeo = useMemo(() => {
-    if (!data.neighborhoods || !data.crimeData) return null
+    if (!neighborhoods || !crimeData) return null
 
     if (timeActive) {
       // Count filtered points per NHD_NUM (heatmap stores zero-padded NHD_NUM)
@@ -43,7 +44,7 @@ export function CrimeLayer() {
         const num = String(hood).padStart(2, '0')
         counts[num] = (counts[num] ?? 0) + 1
       }
-      const features = data.neighborhoods.features.map((f) => ({
+      const features = neighborhoods.features.map((f) => ({
         ...f,
         properties: {
           ...f.properties,
@@ -54,9 +55,9 @@ export function CrimeLayer() {
     }
 
     // No time filter — use pre-aggregated counts
-    const features = data.neighborhoods.features.map((f) => {
+    const features = neighborhoods.features.map((f) => {
       const nhdNum = String(f.properties.NHD_NUM).padStart(2, '0')
-      const hood = data.crimeData!.neighborhoods[nhdNum]
+      const hood = crimeData.neighborhoods[nhdNum]
       let count = 0
       if (hood) {
         if (category === 'all') {
@@ -71,7 +72,7 @@ export function CrimeLayer() {
       }
     })
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.crimeData, category, timeActive, filteredPoints])
+  }, [neighborhoods, crimeData, category, timeActive, filteredPoints])
 
   const heatmapGeo = useMemo(() => buildHeatmapGeo(filteredPoints), [filteredPoints])
 
@@ -90,7 +91,7 @@ export function CrimeLayer() {
     ...breaks.slice(1).flatMap((b, i) => [b, CRIME_COLORS[i + 1]]),
   ]
 
-  if (!data.crimeData || !data.neighborhoods) return null
+  if (!crimeData || !neighborhoods) return null
 
   return (
     <>

@@ -1,22 +1,23 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { VACANCY_COLORS, percentileBreaks } from '@/lib/colors'
 import { filterVacancies } from '@/lib/analysis'
 
 export function VacancyLayer() {
-  const { state } = useExplorer()
-  const data = useData()
+  const vacancyData = useDataStore((s) => s.vacancyData)
+  const subToggles = useExplorerStore((s) => s.subToggles)
 
   const filtered = useMemo(
-    () => (data.vacancyData ? filterVacancies(data.vacancyData, state.subToggles) : []),
-    [data.vacancyData, state.subToggles],
+    () => (vacancyData ? filterVacancies(vacancyData, subToggles) : []),
+    [vacancyData, subToggles],
   )
 
   // Compute breaks from ALL data so colors stay stable when filtering
   const breaks = useMemo(
-    () => percentileBreaks((data.vacancyData ?? []).map((p) => p.triageScore)),
-    [data.vacancyData],
+    () => percentileBreaks((vacancyData ?? []).map((p) => p.triageScore)),
+    [vacancyData],
   )
 
   const markersGeo = useMemo(
@@ -47,7 +48,7 @@ export function VacancyLayer() {
     ...breaks.slice(1).flatMap((b, i) => [b, VACANCY_COLORS[i + 1]]),
   ]
 
-  if (!data.vacancyData) return null
+  if (!vacancyData) return null
 
   return (
     <Source id="vacancies" type="geojson" data={markersGeo}>

@@ -1,19 +1,20 @@
 import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { DetailRow, DetailSection, MetricCard } from './shared'
+import { useDataStore } from '@/stores/data-store'
 import { haversine } from '@/lib/equity'
 
 export function GroceryDetail({ id }: { id: number }) {
-  const data = useData()
+  const groceryStores = useDataStore((s) => s.groceryStores)
+  const foodDeserts = useDataStore((s) => s.foodDeserts)
 
-  const store = data.groceryStores?.features[id] ?? null
+  const store = groceryStores?.features[id] ?? null
 
   const nearestDesert = useMemo(() => {
-    if (!store || !data.foodDeserts) return null
+    if (!store || !foodDeserts) return null
     const [sLon, sLat] = store.geometry.coordinates as Array<number>
     let nearest: { name: string; dist: number; tractId: string } | null = null
 
-    for (const f of data.foodDeserts.features) {
+    for (const f of foodDeserts.features) {
       const p = f.properties
       if (!p.lila) continue
       const coords = f.geometry.coordinates as Array<Array<Array<number>>>
@@ -31,7 +32,7 @@ export function GroceryDetail({ id }: { id: number }) {
     }
 
     return nearest
-  }, [store, data.foodDeserts])
+  }, [store, foodDeserts])
 
   if (!store) {
     return <div className="text-xs text-muted-foreground">Store not found</div>

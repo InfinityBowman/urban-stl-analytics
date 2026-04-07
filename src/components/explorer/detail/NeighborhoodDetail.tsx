@@ -1,29 +1,33 @@
 import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { DetailRow, DetailSection } from './shared'
 import { useNeighborhoodMetrics } from './useNeighborhoodMetrics'
+import { useDataStore } from '@/stores/data-store'
 import { haversine, polygonCentroid } from '@/lib/equity'
 
 export function NeighborhoodDetail({ id }: { id: string }) {
-  const data = useData()
+  const csbData = useDataStore((s) => s.csbData)
+  const routes = useDataStore((s) => s.routes)
+  const stopStats = useDataStore((s) => s.stopStats)
+  const foodDeserts = useDataStore((s) => s.foodDeserts)
+
   const hoodKey = id.padStart(2, '0')
   const metrics = useNeighborhoodMetrics(id)
 
-  const hood = data.csbData?.neighborhoods[hoodKey]
+  const hood = csbData?.neighborhoods[hoodKey]
 
   const nearbyRoutes = useMemo(() => {
-    if (!data.routes || !data.stopStats || !metrics) return []
+    if (!routes || !stopStats || !metrics) return []
     const routeIds = new Set<string>()
     for (const stop of metrics.nearbyStops) {
-      const stats = data.stopStats[stop.properties.stop_id as string]
+      const stats = stopStats[stop.properties.stop_id as string]
       stats.routes.forEach((r) => routeIds.add(r))
     }
-    return data.routes.filter((r) => routeIds.has(r.route_id))
-  }, [data.routes, data.stopStats, metrics])
+    return routes.filter((r) => routeIds.has(r.route_id))
+  }, [routes, stopStats, metrics])
 
   const isDesert = useMemo(() => {
-    if (!data.foodDeserts || !metrics) return false
-    return data.foodDeserts.features.some((f) => {
+    if (!foodDeserts || !metrics) return false
+    return foodDeserts.features.some((f) => {
       const p = f.properties
       if (!p.lila) return false
       const tc = polygonCentroid(
@@ -31,7 +35,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
       )
       return haversine(metrics.centroid[0], metrics.centroid[1], tc[0], tc[1]) < 0.5
     })
-  }, [data.foodDeserts, metrics])
+  }, [foodDeserts, metrics])
 
   if (!metrics) {
     return (

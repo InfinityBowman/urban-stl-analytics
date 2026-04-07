@@ -1,23 +1,24 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { CHORO_COLORS, dynamicBreaks } from '@/lib/colors'
 import { buildHeatmapGeo, getHoodComplaintCount } from '@/lib/analysis'
 
 export function ComplaintsLayer() {
-  const { state } = useExplorer()
-  const data = useData()
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
+  const csbData = useDataStore((s) => s.csbData)
 
-  const mode = state.subToggles.complaintsMode
-  const category = state.subToggles.complaintsCategory
-  const timeStart = state.subToggles.timeRangeStart
-  const timeEnd = state.subToggles.timeRangeEnd
+  const mode = useExplorerStore((s) => s.subToggles.complaintsMode)
+  const category = useExplorerStore((s) => s.subToggles.complaintsCategory)
+  const timeStart = useExplorerStore((s) => s.subToggles.timeRangeStart)
+  const timeEnd = useExplorerStore((s) => s.subToggles.timeRangeEnd)
   const timeActive = timeStart !== '' && timeEnd !== ''
 
   // Filter heatmap points by category and time range
   const filteredPoints = useMemo(() => {
-    if (!data.csbData) return []
-    let points = data.csbData.heatmapPoints
+    if (!csbData) return []
+    let points = csbData.heatmapPoints
     if (category !== 'all') {
       points = points.filter((p) => p[2] === category)
     }
@@ -28,11 +29,11 @@ export function ComplaintsLayer() {
       })
     }
     return points
-  }, [data.csbData, category, timeActive, timeStart, timeEnd])
+  }, [csbData, category, timeActive, timeStart, timeEnd])
 
   // Choropleth: color neighborhoods by complaint count
   const choroplethGeo = useMemo(() => {
-    if (!data.neighborhoods || !data.csbData) return null
+    if (!neighborhoods || !csbData) return null
 
     if (timeActive) {
       // Count filtered points per NHD_NUM
@@ -44,7 +45,7 @@ export function ComplaintsLayer() {
         const num = String(hood).padStart(2, '0')
         counts[num] = (counts[num] ?? 0) + 1
       }
-      const features = data.neighborhoods.features.map((f) => ({
+      const features = neighborhoods.features.map((f) => ({
         ...f,
         properties: {
           ...f.properties,
@@ -55,19 +56,19 @@ export function ComplaintsLayer() {
     }
 
     // No time filter — use pre-aggregated counts
-    const features = data.neighborhoods.features.map((f) => ({
+    const features = neighborhoods.features.map((f) => ({
       ...f,
       properties: {
         ...f.properties,
         complaintCount: getHoodComplaintCount(
-          data.csbData!,
+          csbData,
           f.properties.NHD_NUM,
           category,
         ),
       },
     }))
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.csbData, category, timeActive, filteredPoints])
+  }, [neighborhoods, csbData, category, timeActive, filteredPoints])
 
   const heatmapGeo = useMemo(() => buildHeatmapGeo(filteredPoints), [filteredPoints])
 
@@ -86,7 +87,7 @@ export function ComplaintsLayer() {
     ...breaks.slice(1).flatMap((b, i) => [b, CHORO_COLORS[i + 1]]),
   ]
 
-  if (!data.csbData || !data.neighborhoods) return null
+  if (!csbData || !neighborhoods) return null
 
   return (
     <>

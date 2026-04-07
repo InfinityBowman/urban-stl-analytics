@@ -10,7 +10,8 @@ import { ArpaAnalytics } from './analytics/ArpaAnalytics'
 import { DemographicsAnalytics } from './analytics/DemographicsAnalytics'
 import { HousingAnalytics } from './analytics/HousingAnalytics'
 import type { LayerToggles } from '@/lib/explorer-types'
-import { useExplorer } from '@/components/explorer/ExplorerProvider'
+import { useExplorerStore } from '@/stores/explorer-store'
+import { useDataStore } from '@/stores/data-store'
 
 interface TabDef {
   key: string
@@ -37,13 +38,18 @@ const LAYER_TABS: Array<{
 ]
 
 export function AnalyticsPanel() {
-  const { state, dispatch, loadLayerData } = useExplorer()
+  const selected = useExplorerStore((s) => s.selected)
+  const analyticsPanelExpanded = useExplorerStore((s) => s.analyticsPanelExpanded)
+  const analyticsPanelHeight = useExplorerStore((s) => s.analyticsPanelHeight)
+  const analyticsTab = useExplorerStore((s) => s.analyticsTab)
+  const toggleAnalytics = useExplorerStore((s) => s.toggleAnalytics)
+  const setAnalyticsTab = useExplorerStore((s) => s.setAnalyticsTab)
+  const setAnalyticsHeight = useExplorerStore((s) => s.setAnalyticsHeight)
+
   const [activeTab, setActiveTab] = useState<string>('')
-  const dragRef = useRef<{ startY: number; startH: number } | null>(null)
-  const heightRef = useRef(state.analyticsPanelHeight)
+  const heightRef = useRef(analyticsPanelHeight)
   const contentRef = useRef<HTMLDivElement>(null)
-  const isDragging = useRef(false)
-  const clipHeight = useMotionValue(state.analyticsPanelExpanded ? state.analyticsPanelHeight : 0)
+  const clipHeight = useMotionValue(analyticsPanelExpanded ? analyticsPanelHeight : 0)
 
   // Show all analytics tabs always — data loads on demand
   const tabs = useMemo<Array<TabDef>>(() => {
@@ -67,75 +73,75 @@ export function AnalyticsPanel() {
 
   // Sync from external state (e.g. AI configure_chart)
   useEffect(() => {
-    if (state.analyticsTab) {
-      setActiveTab(state.analyticsTab)
+    if (analyticsTab) {
+      setActiveTab(analyticsTab)
       // Animate open if the panel just expanded programmatically
-      if (state.analyticsPanelExpanded) {
-        animate(clipHeight, state.analyticsPanelHeight, {
+      if (analyticsPanelExpanded) {
+        animate(clipHeight, analyticsPanelHeight, {
           type: 'tween',
           duration: 0.25,
           ease: 'easeOut',
         })
       }
-      dispatch({ type: 'SET_ANALYTICS_TAB', tab: '' })
+      setAnalyticsTab('')
     }
-  }, [state.analyticsTab, state.analyticsPanelExpanded, state.analyticsPanelHeight, dispatch, clipHeight])
+  }, [analyticsTab, analyticsPanelExpanded, analyticsPanelHeight, setAnalyticsTab, clipHeight])
 
   // Load data when a tab is selected (regardless of layer toggle)
-  const handleTabClick = useCallback(
-    (tabKey: string) => {
-      setActiveTab(tabKey)
-      const tab = LAYER_TABS.find((lt) => lt.key === tabKey)
-      if (tab) {
-        loadLayerData(tab.layer)
-        // Transit needs food access data for equity gaps
-        if (tab.layer === 'transit') loadLayerData('foodAccess')
-      }
-    },
-    [loadLayerData],
-  )
-
-  useEffect(() => {
-    heightRef.current = state.analyticsPanelHeight
-  }, [state.analyticsPanelHeight])
-
-  useEffect(() => {
-    return () => {
-      dragRef.current = null
+  const handleTabClick = useCallback((tabKey: string) => {
+    setActiveTab(tabKey)
+    const tab = LAYER_TABS.find((lt) => lt.key === tabKey)
+    if (tab) {
+      const loadLayer = useDataStore.getState().loadLayer
+      loadLayer(tab.layer)
+      // Transit needs food access data for equity gaps
+      if (tab.layer === 'transit') loadLayer('foodAccess')
     }
   }, [])
 
-  const onDragStart = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault()
-      isDragging.current = true
-      dragRef.current = { startY: e.clientY, startH: heightRef.current }
+  useEffect(() => {
+    heightRef.current = analyticsPanelHeight
+  }, [analyticsPanelHeight])
 
-      const onMove = (ev: MouseEvent) => {
-        if (!dragRef.current) return
-        const delta = dragRef.current.startY - ev.clientY
-        const next = Math.min(800, Math.max(150, dragRef.current.startH + delta))
-        clipHeight.jump(next)
-        if (contentRef.current) contentRef.current.style.height = `${next}px`
-      }
+  // Drag-to-resize: attach window listeners via effect so they're always
+  // cleaned up, even if the drag is interrupted by an unmount or focus loss.
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartRef = useRef<{ startY: number; startH: number } | null>(null)
 
-      const onUp = () => {
-        const final = Math.round(clipHeight.get())
-        isDragging.current = false
-        dispatch({ type: 'SET_ANALYTICS_HEIGHT', height: final })
-        dragRef.current = null
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
-      }
+  useEffect(() => {
+    if (!isDragging) return
+    const onMove = (ev: MouseEvent) => {
+      if (!dragStartRef.current) return
+      const delta = dragStartRef.current.startY - ev.clientY
+      const next = Math.min(
+        800,
+        Math.max(150, dragStartRef.current.startH + delta),
+      )
+      clipHeight.jump(next)
+      if (contentRef.current) contentRef.current.style.height = `${next}px`
+    }
+    const onUp = () => {
+      const final = Math.round(clipHeight.get())
+      setAnalyticsHeight(final)
+      dragStartRef.current = null
+      setIsDragging(false)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [isDragging, clipHeight, setAnalyticsHeight])
 
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
-    },
-    [dispatch, clipHeight],
-  )
+  const onDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    dragStartRef.current = { startY: e.clientY, startH: heightRef.current }
+    setIsDragging(true)
+  }, [])
 
-  const showNeighborhood = state.selected?.type === 'neighborhood'
-  const expanded = state.analyticsPanelExpanded
+  const showNeighborhood = selected?.type === 'neighborhood'
+  const expanded = analyticsPanelExpanded
   const currentTab = tabs.find((t) => t.key === activeTab)
 
   return (
@@ -156,8 +162,8 @@ export function AnalyticsPanel() {
       <button
         onClick={() => {
           const next = !expanded
-          dispatch({ type: 'TOGGLE_ANALYTICS' })
-          animate(clipHeight, next ? state.analyticsPanelHeight : 0, {
+          toggleAnalytics()
+          animate(clipHeight, next ? analyticsPanelHeight : 0, {
             type: 'tween',
             duration: 0.25,
             ease: 'easeOut',
@@ -199,11 +205,11 @@ export function AnalyticsPanel() {
         <div
           ref={contentRef}
           className="overflow-y-scroll px-4 py-3"
-          style={{ height: state.analyticsPanelHeight }}
+          style={{ height: analyticsPanelHeight }}
         >
           {showNeighborhood ? (
             <NeighborhoodAnalytics
-              id={(state.selected as { type: 'neighborhood'; id: string }).id}
+              id={(selected as { type: 'neighborhood'; id: string }).id}
             />
           ) : currentTab ? (
             currentTab.node

@@ -1,46 +1,31 @@
 import { useMemo } from 'react'
-import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
-import type { FoodDesertProperties } from '@/lib/types'
+import { useDataStore } from '@/stores/data-store'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import { computeEquityGaps } from '@/lib/equity'
 import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 
 export function TransitAnalytics() {
-  const data = useData()
-  const failed = useFailedDatasets()
+  const foodDeserts = useDataStore((s) => s.foodDeserts)
+  const stops = useDataStore((s) => s.stops)
+  const stopStats = useDataStore((s) => s.stopStats)
+  const groceryStores = useDataStore((s) => s.groceryStores)
+  const routes = useDataStore((s) => s.routes)
+  const failed = useDataStore((s) => s.failedDatasets)
 
   const gapResults = useMemo(() => {
-    if (
-      !data.foodDeserts ||
-      !data.stops ||
-      !data.stopStats ||
-      !data.groceryStores
-    )
-      return []
-    return computeEquityGaps(
-      data.foodDeserts,
-      data.stops,
-      data.stopStats,
-      data.groceryStores,
-    )
-  }, [data.foodDeserts, data.stops, data.stopStats, data.groceryStores])
+    if (!foodDeserts || !stops || !stopStats || !groceryStores) return []
+    return computeEquityGaps(foodDeserts, stops, stopStats, groceryStores)
+  }, [foodDeserts, stops, stopStats, groceryStores])
 
   const desertTracts = useMemo(
-    () =>
-      data.foodDeserts?.features.filter(
-        (f) => (f.properties).lila,
-      ) ?? [],
-    [data.foodDeserts],
+    () => foodDeserts?.features.filter((f) => f.properties.lila) ?? [],
+    [foodDeserts],
   )
 
   const totalPop = useMemo(
-    () =>
-      desertTracts.reduce(
-        (s, f) => s + ((f.properties).pop || 0),
-        0,
-      ),
+    () => desertTracts.reduce((s, f) => s + (f.properties.pop || 0), 0),
     [desertTracts],
   )
 
@@ -92,7 +77,7 @@ export function TransitAnalytics() {
       .slice(0, 8)
   }, [desertTracts])
 
-  if (!data.stops || !data.routes || !data.foodDeserts || !data.stopStats) {
+  if (!stops || !routes || !foodDeserts || !stopStats) {
     if (failed.has('transit') || failed.has('foodAccess')) {
       return (
         <div className="text-xs text-muted-foreground">Transit data unavailable.</div>
@@ -110,15 +95,15 @@ export function TransitAnalytics() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <MiniKpi
           label="Stops"
-          value={data.stops.features.length.toLocaleString()}
+          value={stops.features.length.toLocaleString()}
         />
-        <MiniKpi label="Routes" value={String(data.routes.length)} />
+        <MiniKpi label="Routes" value={String(routes.length)} />
         <MiniKpi label="LILA Tracts" value={String(desertTracts.length)} />
         <MiniKpi label="Desert Pop" value={totalPop.toLocaleString()} />
       </div>
 
       {gapResults.length > 0 && (
-        <div className="rounded-lg border border-red-200 bg-gradient-to-br from-red-50 to-card p-2.5 text-[0.65rem] leading-relaxed dark:border-red-900/30 dark:from-red-950/30">
+        <div className="rounded-lg border border-red-200 bg-linear-to-br from-red-50 to-card p-2.5 text-[0.65rem] leading-relaxed dark:border-red-900/30 dark:from-red-950/30">
           <strong className="text-red-600 dark:text-red-400">
             {worstTracts.length}
           </strong>{' '}
@@ -139,7 +124,7 @@ export function TransitAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Equity Score Distribution
           </div>
-          <div className="h-[180px] overflow-hidden">
+          <div className="h-45 overflow-hidden">
             <CategoryBarChart
               data={scoreDistChart}
               horizontal={false}
@@ -152,7 +137,7 @@ export function TransitAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Top Tracts by Desert Population
           </div>
-          <div className="h-[180px] overflow-hidden">
+          <div className="h-45 overflow-hidden">
             <CategoryBarChart
               data={topDesertPopChart}
               horizontal
@@ -163,7 +148,7 @@ export function TransitAnalytics() {
         </div>
       </div>
 
-      <div className="flex max-h-[150px] flex-col gap-1.5 overflow-y-auto">
+      <div className="flex max-h-37.5 flex-col gap-1.5 overflow-y-auto">
         {gapResults.slice(0, 8).map((g) => {
           const sev = equitySeverity(g.score)
           const scoreClass =

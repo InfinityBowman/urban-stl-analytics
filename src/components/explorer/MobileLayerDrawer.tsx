@@ -1,5 +1,5 @@
-import { useExplorer } from './ExplorerProvider'
 import { LayerPanel } from './LayerPanel'
+import { useExplorerStore } from '@/stores/explorer-store'
 import {
   Sheet,
   SheetContent,
@@ -7,15 +7,14 @@ import {
 } from '@/components/ui/sheet'
 
 export function MobileLayerDrawer() {
-  const { state, dispatch } = useExplorer()
-
-  const close = () => dispatch({ type: 'CLOSE_MOBILE_LAYER_DRAWER' })
+  const open = useExplorerStore((s) => s.mobileLayerDrawerOpen)
+  const closeMobileLayerDrawer = useExplorerStore((s) => s.closeMobileLayerDrawer)
 
   return (
     <Sheet
-      open={state.mobileLayerDrawerOpen}
-      onOpenChange={(open) => {
-        if (!open) close()
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) closeMobileLayerDrawer()
       }}
     >
       <SheetContent
@@ -25,7 +24,7 @@ export function MobileLayerDrawer() {
         className="w-[min(300px,85vw)] gap-0 overflow-y-auto p-0"
       >
         <SheetTitle className="sr-only">Layers</SheetTitle>
-        <LayerPanel onClose={close} />
+        <LayerPanel onClose={closeMobileLayerDrawer} />
       </SheetContent>
     </Sheet>
   )

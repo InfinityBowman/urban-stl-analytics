@@ -1,44 +1,43 @@
 import { useMemo } from 'react'
-import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
+import { useDataStore } from '@/stores/data-store'
 import { TimeSeriesChart } from '@/components/charts/TimeSeriesChart'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 export function ArpaAnalytics() {
-  const data = useData()
-  const failed = useFailedDatasets()
+  const arpaData = useDataStore((s) => s.arpaData)
+  const failed = useDataStore((s) => s.failedDatasets)
 
   const kpis = useMemo(() => {
-    if (!data.arpaData) return null
-    const d = data.arpaData
-    const months = Object.keys(d.monthlySpending)
+    if (!arpaData) return null
+    const months = Object.keys(arpaData.monthlySpending)
     const dateRange =
       months.length > 0
         ? `${months[0]} - ${months[months.length - 1]}`
         : 'N/A'
     return {
-      totalSpent: d.totalSpent,
-      transactions: d.transactionCount,
-      projects: d.projects.length,
+      totalSpent: arpaData.totalSpent,
+      transactions: arpaData.transactionCount,
+      projects: arpaData.projects.length,
       dateRange,
     }
-  }, [data.arpaData])
+  }, [arpaData])
 
   const spendingChart = useMemo(() => {
-    if (!data.arpaData) return []
-    return Object.entries(data.arpaData.monthlySpending)
+    if (!arpaData) return []
+    return Object.entries(arpaData.monthlySpending)
       .sort()
       .map(([date, value]) => ({
         date,
         value: Math.round(value / 1000), // in thousands
-        ma7: Math.round((data.arpaData!.cumulativeSpending[date] ?? 0) / 1000000), // cumulative in millions
+        ma7: Math.round((arpaData.cumulativeSpending[date] ?? 0) / 1000000), // cumulative in millions
       }))
-  }, [data.arpaData])
+  }, [arpaData])
 
   const categoryChart = useMemo(
     () =>
-      data.arpaData
-        ? Object.entries(data.arpaData.categoryBreakdown)
+      arpaData
+        ? Object.entries(arpaData.categoryBreakdown)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10)
             .map(([name, value]) => ({
@@ -46,10 +45,10 @@ export function ArpaAnalytics() {
               value: Math.round(value / 1000),
             }))
         : [],
-    [data.arpaData],
+    [arpaData],
   )
 
-  if (!data.arpaData || !kpis) {
+  if (!arpaData || !kpis) {
     if (failed.has('arpa')) {
       return (
         <div className="text-xs text-muted-foreground">ARPA data unavailable.</div>
@@ -76,7 +75,7 @@ export function ArpaAnalytics() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[180px] overflow-hidden">
+        <div className="h-45 overflow-hidden">
           <TimeSeriesChart
             data={spendingChart}
             barLabel="Monthly ($K)"
@@ -85,7 +84,7 @@ export function ArpaAnalytics() {
             dualAxis
           />
         </div>
-        <div className="h-[180px] overflow-hidden">
+        <div className="h-45 overflow-hidden">
           <CategoryBarChart data={categoryChart} horizontal height={180} valueLabel="Spent ($K)" />
         </div>
       </div>
@@ -96,7 +95,7 @@ export function ArpaAnalytics() {
             Top Vendors
           </div>
           <div className="flex flex-col gap-1">
-            {data.arpaData.topVendors.slice(0, 8).map((v) => (
+            {arpaData.topVendors.slice(0, 8).map((v) => (
               <div
                 key={v.name}
                 className="flex items-center justify-between text-[0.6rem]"
@@ -114,7 +113,7 @@ export function ArpaAnalytics() {
             Top Projects
           </div>
           <div className="flex flex-col gap-1">
-            {data.arpaData.projects.slice(0, 8).map((p) => (
+            {arpaData.projects.slice(0, 8).map((p) => (
               <div
                 key={p.id}
                 className="flex items-center justify-between text-[0.6rem]"
@@ -131,4 +130,3 @@ export function ArpaAnalytics() {
     </div>
   )
 }
-

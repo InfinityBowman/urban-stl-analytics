@@ -1,72 +1,105 @@
+import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 
 export function NeighborhoodBaseLayer() {
-  const data = useData()
-  const { state } = useExplorer()
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
+  const selected = useExplorerStore((s) => s.selected)
+  const compareMode = useExplorerStore((s) => s.compareMode)
+  const compareNeighborhoodA = useExplorerStore((s) => s.compareNeighborhoodA)
+  const compareNeighborhoodB = useExplorerStore((s) => s.compareNeighborhoodB)
 
-  if (!data.neighborhoods) return null
+  const selectedNum = useMemo(() => {
+    if (!selected || selected.type !== 'neighborhood') return null
+    return parseInt(selected.id, 10)
+  }, [selected])
 
-  const selectedId =
-    state.selected?.type === 'neighborhood' ? state.selected.id : null
-  const selectedNum = selectedId ? parseInt(selectedId, 10) : null
+  const compareANum = useMemo(
+    () => (compareNeighborhoodA ? parseInt(compareNeighborhoodA, 10) : null),
+    [compareNeighborhoodA],
+  )
+  const compareBNum = useMemo(
+    () => (compareNeighborhoodB ? parseInt(compareNeighborhoodB, 10) : null),
+    [compareNeighborhoodB],
+  )
 
-  const compareANum = state.compareNeighborhoodA
-    ? parseInt(state.compareNeighborhoodA, 10)
-    : null
-  const compareBNum = state.compareNeighborhoodB
-    ? parseInt(state.compareNeighborhoodB, 10)
-    : null
+  const matchExpr = useMemo<mapboxgl.Expression>(
+    () => ['==', ['get', 'NHD_NUM'], selectedNum ?? -1],
+    [selectedNum],
+  )
 
-  const isInCompareMode = state.compareMode
+  const matchCompareA = useMemo<mapboxgl.Expression>(
+    () => ['==', ['get', 'NHD_NUM'], compareANum ?? -1],
+    [compareANum],
+  )
 
-  const matchExpr: mapboxgl.Expression = [
-    '==',
-    ['get', 'NHD_NUM'],
-    selectedNum ?? -1,
-  ]
+  const matchCompareB = useMemo<mapboxgl.Expression>(
+    () => ['==', ['get', 'NHD_NUM'], compareBNum ?? -1],
+    [compareBNum],
+  )
 
-  const matchCompareA: mapboxgl.Expression = [
-    '==',
-    ['get', 'NHD_NUM'],
-    compareANum ?? -1,
-  ]
+  const isCompareSelected = useMemo<mapboxgl.Expression>(
+    () => ['any', matchCompareA, matchCompareB],
+    [matchCompareA, matchCompareB],
+  )
 
-  const matchCompareB: mapboxgl.Expression = [
-    '==',
-    ['get', 'NHD_NUM'],
-    compareBNum ?? -1,
-  ]
+  const fillColor = useMemo<mapboxgl.Expression>(
+    () =>
+      compareMode
+        ? [
+            'case',
+            matchCompareA,
+            'rgba(59,130,246,0.25)',
+            matchCompareB,
+            'rgba(249,115,22,0.25)',
+            matchExpr,
+            'rgba(99,102,241,0.25)',
+            'rgba(0,0,0,0.08)',
+          ]
+        : ['case', matchExpr, 'rgba(99,102,241,0.25)', 'transparent'],
+    [compareMode, matchCompareA, matchCompareB, matchExpr],
+  )
 
-  const isCompareSelected: mapboxgl.Expression = [
-    'any',
-    matchCompareA,
-    matchCompareB,
-  ]
+  const lineColor = useMemo<mapboxgl.Expression>(
+    () =>
+      compareMode
+        ? [
+            'case',
+            matchCompareA,
+            '#3b82f6',
+            matchCompareB,
+            '#f97316',
+            matchExpr,
+            '#4f6ef7',
+            'rgba(0,0,0,0.12)',
+          ]
+        : ['case', matchExpr, '#4f6ef7', 'rgba(0,0,0,0.12)'],
+    [compareMode, matchCompareA, matchCompareB, matchExpr],
+  )
+
+  const lineWidth = useMemo<mapboxgl.Expression>(
+    () =>
+      compareMode
+        ? ['case', isCompareSelected, 3.5, matchExpr, 2.5, 0.5]
+        : ['case', matchExpr, 2.5, 0.5],
+    [compareMode, isCompareSelected, matchExpr],
+  )
+
+  if (!neighborhoods) return null
 
   return (
     <Source
       id="neighborhood-base"
       type="geojson"
-      data={data.neighborhoods as unknown as GeoJSON.GeoJSON}
+      data={neighborhoods as unknown as GeoJSON.GeoJSON}
     >
       <Layer
         id="neighborhood-base-fill"
         type="fill"
         beforeId="waterway-label"
         paint={{
-          'fill-color': isInCompareMode
-            ? [
-                'case',
-                matchCompareA,
-                'rgba(59,130,246,0.25)',
-                matchCompareB,
-                'rgba(249,115,22,0.25)',
-                matchExpr,
-                'rgba(99,102,241,0.25)',
-                'rgba(0,0,0,0.08)',
-              ]
-            : ['case', matchExpr, 'rgba(99,102,241,0.25)', 'transparent'],
+          'fill-color': fillColor,
           'fill-opacity': 0.5,
         }}
       />
@@ -74,21 +107,8 @@ export function NeighborhoodBaseLayer() {
         id="neighborhood-base-outline"
         type="line"
         paint={{
-          'line-color': isInCompareMode
-            ? [
-                'case',
-                matchCompareA,
-                '#3b82f6',
-                matchCompareB,
-                '#f97316',
-                matchExpr,
-                '#4f6ef7',
-                'rgba(0,0,0,0.12)',
-              ]
-            : ['case', matchExpr, '#4f6ef7', 'rgba(0,0,0,0.12)'],
-          'line-width': isInCompareMode
-            ? ['case', isCompareSelected, 3.5, matchExpr, 2.5, 0.5]
-            : ['case', matchExpr, 2.5, 0.5],
+          'line-color': lineColor,
+          'line-width': lineWidth,
         }}
       />
       <Layer

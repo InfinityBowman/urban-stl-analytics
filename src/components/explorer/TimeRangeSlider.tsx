@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { useData, useExplorer } from './ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { Slider } from '@/components/ui/slider'
 import {
   Tooltip,
@@ -12,21 +13,23 @@ function clamp(v: number, min: number, max: number): number {
 }
 
 export function TimeRangeSlider() {
-  const { state, dispatch } = useExplorer()
-  const data = useData()
+  const showComplaints = useExplorerStore((s) => s.layers.complaints)
+  const showCrime = useExplorerStore((s) => s.layers.crime)
+  const timeRangeStart = useExplorerStore((s) => s.subToggles.timeRangeStart)
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
+  const csbData = useDataStore((s) => s.csbData)
+  const crimeData = useDataStore((s) => s.crimeData)
 
-  const showComplaints = state.layers.complaints
-  const showCrime = state.layers.crime
   const visible = showComplaints || showCrime
 
   // Collect all heatmap points to derive available years
   const allPoints = useMemo(() => {
     if (!visible) return []
     return [
-      ...(showComplaints && data.csbData ? data.csbData.heatmapPoints : []),
-      ...(showCrime && data.crimeData ? data.crimeData.heatmapPoints : []),
+      ...(showComplaints && csbData ? csbData.heatmapPoints : []),
+      ...(showCrime && crimeData ? crimeData.heatmapPoints : []),
     ]
-  }, [visible, showComplaints, showCrime, data.csbData, data.crimeData])
+  }, [visible, showComplaints, showCrime, csbData, crimeData])
 
   // Derive unique sorted years from data
   const years = useMemo(() => {
@@ -42,42 +45,25 @@ export function TimeRangeSlider() {
   useEffect(() => {
     if (years.length > 0) {
       const latestYear = years[years.length - 1]
-      dispatch({
-        type: 'SET_SUB_TOGGLE',
-        key: 'timeRangeStart',
-        value: `${latestYear}-01-01`,
-      })
-      dispatch({
-        type: 'SET_SUB_TOGGLE',
-        key: 'timeRangeEnd',
-        value: `${latestYear}-12-31`,
-      })
+      setSubToggle('timeRangeStart', `${latestYear}-01-01`)
+      setSubToggle('timeRangeEnd', `${latestYear}-12-31`)
     }
-  }, [years, dispatch, showComplaints, showCrime])
+  }, [years, setSubToggle, showComplaints, showCrime])
 
   const selectedYear = useMemo(() => {
-    const { timeRangeStart } = state.subToggles
     if (!timeRangeStart) return years[years.length - 1]
     return Number(timeRangeStart.slice(0, 4))
-  }, [state.subToggles.timeRangeStart, years])
+  }, [timeRangeStart, years])
 
   const handleYearChange = useCallback(
     (values: Array<number>) => {
       if (years.length === 0) return
       const idx = clamp(values[0], 0, years.length - 1)
       const year = years[idx]
-      dispatch({
-        type: 'SET_SUB_TOGGLE',
-        key: 'timeRangeStart',
-        value: `${year}-01-01`,
-      })
-      dispatch({
-        type: 'SET_SUB_TOGGLE',
-        key: 'timeRangeEnd',
-        value: `${year}-12-31`,
-      })
+      setSubToggle('timeRangeStart', `${year}-01-01`)
+      setSubToggle('timeRangeEnd', `${year}-12-31`)
     },
-    [years, dispatch],
+    [years, setSubToggle],
   )
 
   if (!visible || years.length < 2) return null

@@ -8,13 +8,13 @@ import {
   Group01Icon,
   Store01Icon,
 } from '@hugeicons/core-free-icons'
-import { useExplorer } from './ExplorerProvider'
 import { NeighborhoodDetail } from './detail/NeighborhoodDetail'
 import { VacancyDetail } from './detail/VacancyDetail'
 import { StopDetail } from './detail/StopDetail'
 import { GroceryDetail } from './detail/GroceryDetail'
 import { FoodDesertDetail } from './detail/FoodDesertDetail'
 import { NeighborhoodComparePanel } from './detail/NeighborhoodComparePanel'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { Switch } from '@/components/ui/switch'
 
 type IconType = typeof Building03Icon
@@ -39,21 +39,27 @@ const ENTITY_CONFIG: Record<
 }
 
 export function DetailPanel() {
-  const { state, dispatch } = useExplorer()
+  const selected = useExplorerStore((s) => s.selected)
+  const detailPanelOpen = useExplorerStore((s) => s.detailPanelOpen)
+  const compareMode = useExplorerStore((s) => s.compareMode)
+  const compareNeighborhoodA = useExplorerStore((s) => s.compareNeighborhoodA)
+  const compareNeighborhoodB = useExplorerStore((s) => s.compareNeighborhoodB)
+  const toggleCompareMode = useExplorerStore((s) => s.toggleCompareMode)
+  const clearSelection = useExplorerStore((s) => s.clearSelection)
 
   // Cache last selected value so content stays visible during close animation
-  const cachedSelected = useRef(state.selected)
-  if (state.selected) {
-    cachedSelected.current = state.selected
+  const cachedSelected = useRef(selected)
+  if (selected) {
+    cachedSelected.current = selected
   }
-  const displaySelected = state.detailPanelOpen
-    ? (state.selected ?? cachedSelected.current)
+  const displaySelected = detailPanelOpen
+    ? (selected ?? cachedSelected.current)
     : cachedSelected.current
 
   const config = displaySelected
     ? ENTITY_CONFIG[displaySelected.type]
     : undefined
-  if (state.compareMode) {
+  if (compareMode) {
     return (
       <div className="flex h-full flex-col">
         <div className="border-b border-border/60">
@@ -77,7 +83,7 @@ export function DetailPanel() {
             </span>
             <div className="flex-1" />
             <button
-              onClick={() => dispatch({ type: 'TOGGLE_COMPARE_MODE' })}
+              onClick={toggleCompareMode}
               className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <HugeiconsIcon
@@ -92,17 +98,15 @@ export function DetailPanel() {
               Compare mode
             </span>
             <Switch
-              checked={state.compareMode}
-              onCheckedChange={() =>
-                dispatch({ type: 'TOGGLE_COMPARE_MODE' })
-              }
+              checked={compareMode}
+              onCheckedChange={toggleCompareMode}
             />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           <NeighborhoodComparePanel
-            neighborhoodA={state.compareNeighborhoodA}
-            neighborhoodB={state.compareNeighborhoodB}
+            neighborhoodA={compareNeighborhoodA}
+            neighborhoodB={compareNeighborhoodB}
           />
         </div>
       </div>
@@ -132,7 +136,7 @@ export function DetailPanel() {
           </span>
           <div className="flex-1" />
           <button
-            onClick={() => dispatch({ type: 'CLEAR_SELECTION' })}
+            onClick={clearSelection}
             className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <HugeiconsIcon
@@ -148,10 +152,8 @@ export function DetailPanel() {
               Compare neighborhoods
             </span>
             <Switch
-              checked={state.compareMode}
-              onCheckedChange={() =>
-                dispatch({ type: 'TOGGLE_COMPARE_MODE' })
-              }
+              checked={compareMode}
+              onCheckedChange={toggleCompareMode}
             />
           </div>
         )}

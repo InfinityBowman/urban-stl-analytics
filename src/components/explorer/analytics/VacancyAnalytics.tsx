@@ -1,17 +1,18 @@
 import { useMemo } from 'react'
-import { useData, useExplorer, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 import { filterVacancies } from '@/lib/analysis'
 
 export function VacancyAnalytics() {
-  const { state } = useExplorer()
-  const data = useData()
-  const failed = useFailedDatasets()
+  const subToggles = useExplorerStore((s) => s.subToggles)
+  const vacancyData = useDataStore((s) => s.vacancyData)
+  const failed = useDataStore((s) => s.failedDatasets)
 
   const filtered = useMemo(
-    () => (data.vacancyData ? filterVacancies(data.vacancyData, state.subToggles) : []),
-    [data.vacancyData, state.subToggles],
+    () => (vacancyData ? filterVacancies(vacancyData, subToggles) : []),
+    [vacancyData, subToggles],
   )
 
   const stats = useMemo(() => {
@@ -57,7 +58,7 @@ export function VacancyAnalytics() {
       .map(([name, value]) => ({ name, value }))
   }, [filtered])
 
-  if (!data.vacancyData) {
+  if (!vacancyData) {
     if (failed.has('vacancy')) {
       return (
         <div className="text-xs text-muted-foreground">Vacancy data unavailable.</div>

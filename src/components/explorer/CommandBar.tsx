@@ -7,7 +7,6 @@ import {
   SentIcon,
   StopIcon,
 } from '@hugeicons/core-free-icons'
-import { useData, useExplorer } from './ExplorerProvider'
 import { useChartBuilder } from './analytics/chart-builder/useChartBuilder'
 import type { ActionResult } from '@/lib/ai/action-executor'
 import type { ToolCall } from '@/lib/ai/use-chat'
@@ -17,6 +16,8 @@ import { executeDataTool } from '@/lib/ai/data-executor'
 import { buildKpiSnapshot } from '@/lib/ai/kpi-snapshot'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
 import { useChat } from '@/lib/ai/use-chat'
+import { getDataSnapshot } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -140,8 +141,6 @@ export function CommandBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const { state, dispatch } = useExplorer()
-  const data = useData()
   const [, chartDispatch] = useChartBuilder()
   const { messages, isStreaming, sendMessage, toolCalls, pendingTools, cancel, reset } = useChat()
   const [thinkingWord, setThinkingWord] = useState('')
@@ -158,11 +157,6 @@ export function CommandBar() {
   const rawStreamingText = isStreaming && lastMsg?.role === 'assistant' ? lastMsg.content : ''
   const smoothedText = useSmoothedText(rawStreamingText)
 
-  // Refs for values needed in tool execution (avoids re-running effect on state changes)
-  const stateRef = useRef(state)
-  stateRef.current = state
-  const dataRef = useRef(data)
-  dataRef.current = data
   const executedToolIdsRef = useRef(new Set<string>())
 
   // Global keyboard shortcut: Cmd+K / Ctrl+K
@@ -205,34 +199,32 @@ export function CommandBar() {
     const newTools = toolCalls.filter((tc) => !executedToolIdsRef.current.has(tc.id))
     if (newTools.length === 0) return
 
-    // Track toggled layers to prevent double-toggle when multiple tool calls
-    // try to enable the same layer (state snapshot is stale within this batch)
+    // Snapshot current state/data once per batch. executeToolCall mutates the
+    // store via method calls, and we intentionally read the layer toggles at
+    // batch start so "enable if not on" logic doesn't double-toggle when
+    // multiple tools target the same layer.
+    const stateSnapshot = useExplorerStore.getState()
+    const dataSnapshot = getDataSnapshot()
     const toggledLayers = new Set<string>()
-    const guardedDispatch: typeof dispatch = (action) => {
-      if (action.type === 'TOGGLE_LAYER') {
-        if (toggledLayers.has(action.layer)) return
-        toggledLayers.add(action.layer)
-      }
-      dispatch(action)
-    }
+
     const results: Array<ActionResult> = []
     for (const tc of newTools) {
       executedToolIdsRef.current.add(tc.id)
       const result = executeToolCall(tc, {
-        state: stateRef.current,
-        dispatch: guardedDispatch,
+        state: stateSnapshot,
+        toggledLayers,
         chartDispatch,
-        data: dataRef.current,
+        data: dataSnapshot,
       })
       results.push(result)
     }
     setActionResults((prev) => [...prev, ...results])
-  }, [toolCalls, dispatch, chartDispatch])
+  }, [toolCalls, chartDispatch])
 
   // Resolve data tool calls against current ExplorerData
   const resolveDataTools = useCallback(
     (tools: Array<ToolCall>) =>
-      tools.map((tc) => executeDataTool(tc, dataRef.current)),
+      tools.map((tc) => executeDataTool(tc, getDataSnapshot())),
     [],
   )
 
@@ -245,11 +237,13 @@ export function CommandBar() {
       setActionResults([])
       executedToolIdsRef.current.clear()
 
+      const data = getDataSnapshot()
+      const state = useExplorerStore.getState()
       const kpiSnapshot = buildKpiSnapshot(data)
       const context = buildSystemPrompt(state, kpiSnapshot, data)
       await sendMessage(query, context, resolveDataTools)
     },
-    [input, isStreaming, state, data, sendMessage, resolveDataTools],
+    [input, isStreaming, sendMessage, resolveDataTools],
   )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

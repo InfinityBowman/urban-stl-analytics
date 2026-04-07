@@ -1,15 +1,15 @@
 import { useMemo } from 'react'
-import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { MiniKpi } from './MiniKpi'
+import { useDataStore } from '@/stores/data-store'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 export function DemographicsAnalytics() {
-  const data = useData()
-  const failed = useFailedDatasets()
+  const demographicsData = useDataStore((s) => s.demographicsData)
+  const failed = useDataStore((s) => s.failedDatasets)
 
   const kpis = useMemo(() => {
-    if (!data.demographicsData) return null
-    const hoods = Object.values(data.demographicsData)
+    if (!demographicsData) return null
+    const hoods = Object.values(demographicsData)
     const totalPop = hoods.reduce((s, h) => s + (h.population['2020'] ?? 0), 0)
     const totalUnits = hoods.reduce((s, h) => s + h.housing.totalUnits, 0)
     const totalVacant = hoods.reduce((s, h) => s + h.housing.vacant, 0)
@@ -26,22 +26,22 @@ export function DemographicsAnalytics() {
       avgPopChange: avgPopChange.toFixed(1),
       neighborhoods: hoods.length,
     }
-  }, [data.demographicsData])
+  }, [demographicsData])
 
   const popChart = useMemo(() => {
-    if (!data.demographicsData) return []
-    return Object.entries(data.demographicsData)
+    if (!demographicsData) return []
+    return Object.entries(demographicsData)
       .map(([, h]) => ({
         name: h.name,
         value: h.population['2020'] ?? 0,
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 12)
-  }, [data.demographicsData])
+  }, [demographicsData])
 
   const popGainsChart = useMemo(() => {
-    if (!data.demographicsData) return []
-    return Object.entries(data.demographicsData)
+    if (!demographicsData) return []
+    return Object.entries(demographicsData)
       .filter(([, h]) => h.population['2010'] > 0 && h.popChange10to20 > 0)
       .map(([, h]) => ({
         name: h.name,
@@ -49,11 +49,11 @@ export function DemographicsAnalytics() {
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
-  }, [data.demographicsData])
+  }, [demographicsData])
 
   const popDeclinesChart = useMemo(() => {
-    if (!data.demographicsData) return []
-    return Object.entries(data.demographicsData)
+    if (!demographicsData) return []
+    return Object.entries(demographicsData)
       .filter(([, h]) => h.population['2010'] > 0 && h.popChange10to20 < 0)
       .map(([, h]) => ({
         name: h.name,
@@ -61,9 +61,9 @@ export function DemographicsAnalytics() {
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
-  }, [data.demographicsData])
+  }, [demographicsData])
 
-  if (!data.demographicsData || !kpis) {
+  if (!demographicsData || !kpis) {
     if (failed.has('demographics')) {
       return (
         <div className="text-xs text-muted-foreground">Demographics data unavailable.</div>
@@ -90,7 +90,7 @@ export function DemographicsAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Most Populated Neighborhoods
           </div>
-          <div className="h-[180px] overflow-hidden">
+          <div className="h-45 overflow-hidden">
             <CategoryBarChart data={popChart} horizontal height={180} valueLabel="Population" />
           </div>
         </div>
@@ -98,7 +98,7 @@ export function DemographicsAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Biggest Gains 2010-2020 (%)
           </div>
-          <div className="h-[180px] overflow-hidden">
+          <div className="h-45 overflow-hidden">
             <CategoryBarChart data={popGainsChart} horizontal height={180} valueLabel="Growth (%)" />
           </div>
         </div>
@@ -106,7 +106,7 @@ export function DemographicsAnalytics() {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Biggest Declines 2010-2020 (%)
           </div>
-          <div className="h-[180px] overflow-hidden">
+          <div className="h-45 overflow-hidden">
             <CategoryBarChart data={popDeclinesChart} horizontal height={180} valueLabel="Decline (%)" />
           </div>
         </div>
@@ -114,4 +114,3 @@ export function DemographicsAnalytics() {
     </div>
   )
 }
-

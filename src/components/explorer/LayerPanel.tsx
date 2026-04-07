@@ -10,8 +10,10 @@ import {
   Store01Icon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons'
-import { useData, useExplorer } from './ExplorerProvider'
+import { useShallow } from 'zustand/shallow'
 import type { LayerToggles, SubToggles } from '@/lib/explorer-types'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 
@@ -76,9 +78,10 @@ const LAYER_CONFIG: Array<{
 ]
 
 export function LayerPanel({ onClose }: { onClose?: () => void } = {}) {
-  const { state, dispatch } = useExplorer()
+  const layers = useExplorerStore((s) => s.layers)
+  const toggleLayer = useExplorerStore((s) => s.toggleLayer)
 
-  const activeCount = Object.values(state.layers).filter(Boolean).length
+  const activeCount = Object.values(layers).filter(Boolean).length
 
   return (
     <div className="flex h-full flex-col">
@@ -100,11 +103,11 @@ export function LayerPanel({ onClose }: { onClose?: () => void } = {}) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              for (const key of Object.keys(state.layers) as Array<
+              for (const key of Object.keys(layers) as Array<
                 keyof LayerToggles
               >) {
-                if (state.layers[key]) {
-                  dispatch({ type: 'TOGGLE_LAYER', layer: key })
+                if (layers[key]) {
+                  toggleLayer(key)
                 }
               }
             }}
@@ -130,15 +133,13 @@ export function LayerPanel({ onClose }: { onClose?: () => void } = {}) {
       {/* Layer list */}
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 pb-3 pt-1">
         {LAYER_CONFIG.map((layer) => {
-          const isActive = state.layers[layer.key]
+          const isActive = layers[layer.key]
           return (
             <LayerCard
               key={layer.key}
               layer={layer}
               isActive={isActive}
-              onToggle={() =>
-                dispatch({ type: 'TOGGLE_LAYER', layer: layer.key })
-              }
+              onToggle={() => toggleLayer(layer.key)}
             />
           )
         })}
@@ -258,16 +259,26 @@ function LoadingIndicator() {
 }
 
 function LayerContent({ layerKey }: { layerKey: keyof LayerToggles }) {
-  const data = useData()
-
-  const isLoading =
-    (layerKey === 'complaints' && !data.csbData) ||
-    (layerKey === 'transit' && !data.stops) ||
-    (layerKey === 'vacancy' && !data.vacancyData) ||
-    (layerKey === 'foodAccess' && !data.foodDeserts) ||
-    (layerKey === 'crime' && !data.crimeData) ||
-    (layerKey === 'demographics' && !data.demographicsData) ||
-    (layerKey === 'housing' && !data.housingData)
+  const isLoading = useDataStore((s) => {
+    switch (layerKey) {
+      case 'complaints':
+        return !s.csbData
+      case 'transit':
+        return !s.stops
+      case 'vacancy':
+        return !s.vacancyData
+      case 'foodAccess':
+        return !s.foodDeserts
+      case 'crime':
+        return !s.crimeData
+      case 'demographics':
+        return !s.demographicsData
+      case 'housing':
+        return !s.housingData
+      default:
+        return false
+    }
+  })
 
   if (isLoading) return <LoadingIndicator />
 
@@ -351,16 +362,20 @@ function TagButton({
 /* ── Layer-specific filters ────────────────────────────── */
 
 function ComplaintsFilters() {
-  const { state, dispatch } = useExplorer()
-  const data = useData()
+  const complaintsMode = useExplorerStore((s) => s.subToggles.complaintsMode)
+  const complaintsCategory = useExplorerStore(
+    (s) => s.subToggles.complaintsCategory,
+  )
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
+  const csbData = useDataStore((s) => s.csbData)
 
   const topCategories = useMemo(() => {
-    if (!data.csbData) return []
-    return Object.entries(data.csbData.categories)
+    if (!csbData) return []
+    return Object.entries(csbData.categories)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([cat]) => cat)
-  }, [data.csbData])
+  }, [csbData])
 
   return (
     <>
@@ -369,41 +384,23 @@ function ComplaintsFilters() {
           { value: 'choropleth', label: 'Choropleth' },
           { value: 'heatmap', label: 'Heatmap' },
         ]}
-        value={state.subToggles.complaintsMode}
-        onChange={(v) =>
-          dispatch({
-            type: 'SET_SUB_TOGGLE',
-            key: 'complaintsMode',
-            value: v,
-          })
-        }
+        value={complaintsMode}
+        onChange={(v) => setSubToggle('complaintsMode', v as 'choropleth' | 'heatmap')}
       />
       <div className="flex flex-wrap gap-1">
         <TagButton
           label="All"
-          isActive={state.subToggles.complaintsCategory === 'all'}
+          isActive={complaintsCategory === 'all'}
           activeClass="bg-indigo-500/20 text-indigo-600 dark:text-indigo-400"
-          onClick={() =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'complaintsCategory',
-              value: 'all',
-            })
-          }
+          onClick={() => setSubToggle('complaintsCategory', 'all')}
         />
         {topCategories.map((cat) => (
           <TagButton
             key={cat}
             label={cat}
-            isActive={state.subToggles.complaintsCategory === cat}
+            isActive={complaintsCategory === cat}
             activeClass="bg-indigo-500/20 text-indigo-600 dark:text-indigo-400"
-            onClick={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: 'complaintsCategory',
-                value: cat,
-              })
-            }
+            onClick={() => setSubToggle('complaintsCategory', cat)}
           />
         ))}
       </div>
@@ -412,16 +409,18 @@ function ComplaintsFilters() {
 }
 
 function CrimeFilters() {
-  const { state, dispatch } = useExplorer()
-  const data = useData()
+  const crimeMode = useExplorerStore((s) => s.subToggles.crimeMode)
+  const crimeCategory = useExplorerStore((s) => s.subToggles.crimeCategory)
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
+  const crimeData = useDataStore((s) => s.crimeData)
 
   const topCategories = useMemo(() => {
-    if (!data.crimeData) return []
-    return Object.entries(data.crimeData.categories)
+    if (!crimeData) return []
+    return Object.entries(crimeData.categories)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([cat]) => cat)
-  }, [data.crimeData])
+  }, [crimeData])
 
   return (
     <>
@@ -430,37 +429,23 @@ function CrimeFilters() {
           { value: 'choropleth', label: 'Choropleth' },
           { value: 'heatmap', label: 'Heatmap' },
         ]}
-        value={state.subToggles.crimeMode}
-        onChange={(v) =>
-          dispatch({ type: 'SET_SUB_TOGGLE', key: 'crimeMode', value: v })
-        }
+        value={crimeMode}
+        onChange={(v) => setSubToggle('crimeMode', v as 'choropleth' | 'heatmap')}
       />
       <div className="flex flex-wrap gap-1">
         <TagButton
           label="All"
-          isActive={state.subToggles.crimeCategory === 'all'}
+          isActive={crimeCategory === 'all'}
           activeClass="bg-orange-500/20 text-orange-600 dark:text-orange-400"
-          onClick={() =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'crimeCategory',
-              value: 'all',
-            })
-          }
+          onClick={() => setSubToggle('crimeCategory', 'all')}
         />
         {topCategories.map((cat) => (
           <TagButton
             key={cat}
             label={cat}
-            isActive={state.subToggles.crimeCategory === cat}
+            isActive={crimeCategory === cat}
             activeClass="bg-orange-500/20 text-orange-600 dark:text-orange-400"
-            onClick={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: 'crimeCategory',
-                value: cat,
-              })
-            }
+            onClick={() => setSubToggle('crimeCategory', cat)}
           />
         ))}
       </div>
@@ -469,10 +454,17 @@ function CrimeFilters() {
 }
 
 function TransitFilters() {
-  const { state, dispatch } = useExplorer()
+  const transitToggles = useExplorerStore(
+    useShallow((s) => ({
+      transitStops: s.subToggles.transitStops,
+      transitRoutes: s.subToggles.transitRoutes,
+      transitWalkshed: s.subToggles.transitWalkshed,
+    })),
+  )
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
 
   const toggles: Array<{
-    key: keyof SubToggles
+    key: 'transitStops' | 'transitRoutes' | 'transitWalkshed'
     label: string
     color: string
   }> = [
@@ -487,65 +479,68 @@ function TransitFilters() {
 
   return (
     <>
-      {toggles.map((t) => (
-        <label
-          key={t.key}
-          className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
-        >
-          <div
-            className={cn(
-              'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
-              state.subToggles[t.key]
-                ? 'border-transparent'
-                : 'border-muted-foreground/40 bg-transparent',
-            )}
-            style={{
-              background: state.subToggles[t.key] ? t.color : undefined,
-            }}
+      {toggles.map((t) => {
+        const checked = transitToggles[t.key]
+        return (
+          <label
+            key={t.key}
+            className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
           >
-            {state.subToggles[t.key] && (
-              <svg
-                viewBox="0 0 12 12"
-                className="h-2.5 w-2.5 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2.5 6L5 8.5L9.5 3.5" />
-              </svg>
-            )}
-          </div>
-          <span className="text-[0.62rem] font-medium text-foreground/60 transition-colors group-hover/sub:text-foreground">
-            {t.label}
-          </span>
-          <input
-            type="checkbox"
-            checked={state.subToggles[t.key] as boolean}
-            onChange={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: t.key,
-                value: !state.subToggles[t.key],
-              })
-            }
-            className="sr-only"
-          />
-        </label>
-      ))}
+            <div
+              className={cn(
+                'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
+                checked ? 'border-transparent' : 'border-muted-foreground/40 bg-transparent',
+              )}
+              style={{ background: checked ? t.color : undefined }}
+            >
+              {checked && (
+                <svg
+                  viewBox="0 0 12 12"
+                  className="h-2.5 w-2.5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M2.5 6L5 8.5L9.5 3.5" />
+                </svg>
+              )}
+            </div>
+            <span className="text-[0.62rem] font-medium text-foreground/60 transition-colors group-hover/sub:text-foreground">
+              {t.label}
+            </span>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => setSubToggle(t.key, !checked)}
+              className="sr-only"
+            />
+          </label>
+        )
+      })}
     </>
   )
 }
 
 function VacancyFilters() {
-  const { state, dispatch } = useExplorer()
-  const data = useData()
+  const vacancyFilters = useExplorerStore(
+    useShallow((s) => ({
+      vacancyUseFilter: s.subToggles.vacancyUseFilter,
+      vacancyOwnerFilter: s.subToggles.vacancyOwnerFilter,
+      vacancyTypeFilter: s.subToggles.vacancyTypeFilter,
+      vacancyHoodFilter: s.subToggles.vacancyHoodFilter,
+      vacancyMinScore: s.subToggles.vacancyMinScore,
+      vacancyMaxScore: s.subToggles.vacancyMaxScore,
+    })),
+  )
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
+  const vacancyData = useDataStore((s) => s.vacancyData)
 
   const neighborhoods = useMemo(() => {
-    if (!data.vacancyData) return []
-    return [...new Set(data.vacancyData.map((p) => p.neighborhood))].sort()
-  }, [data.vacancyData])
+    if (!vacancyData) return []
+    return [...new Set(vacancyData.map((p) => p.neighborhood))].sort()
+  }, [vacancyData])
 
   const selectClass =
     'w-full appearance-none rounded-md border border-border/60 bg-muted/60 px-2 py-1.5 text-[0.62rem] font-medium text-foreground outline-none transition-colors hover:border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20'
@@ -553,14 +548,8 @@ function VacancyFilters() {
   return (
     <>
       <select
-        value={state.subToggles.vacancyUseFilter}
-        onChange={(e) =>
-          dispatch({
-            type: 'SET_SUB_TOGGLE',
-            key: 'vacancyUseFilter',
-            value: e.target.value,
-          })
-        }
+        value={vacancyFilters.vacancyUseFilter}
+        onChange={(e) => setSubToggle('vacancyUseFilter', e.target.value)}
         className={selectClass}
       >
         <option value="all">All Best Uses</option>
@@ -569,14 +558,8 @@ function VacancyFilters() {
         <option value="garden">Garden</option>
       </select>
       <select
-        value={state.subToggles.vacancyOwnerFilter}
-        onChange={(e) =>
-          dispatch({
-            type: 'SET_SUB_TOGGLE',
-            key: 'vacancyOwnerFilter',
-            value: e.target.value,
-          })
-        }
+        value={vacancyFilters.vacancyOwnerFilter}
+        onChange={(e) => setSubToggle('vacancyOwnerFilter', e.target.value)}
         className={selectClass}
       >
         <option value="all">All Owners</option>
@@ -585,14 +568,8 @@ function VacancyFilters() {
         <option value="private">Private</option>
       </select>
       <select
-        value={state.subToggles.vacancyTypeFilter}
-        onChange={(e) =>
-          dispatch({
-            type: 'SET_SUB_TOGGLE',
-            key: 'vacancyTypeFilter',
-            value: e.target.value,
-          })
-        }
+        value={vacancyFilters.vacancyTypeFilter}
+        onChange={(e) => setSubToggle('vacancyTypeFilter', e.target.value)}
         className={selectClass}
       >
         <option value="all">All Types</option>
@@ -600,14 +577,8 @@ function VacancyFilters() {
         <option value="lot">Lots</option>
       </select>
       <select
-        value={state.subToggles.vacancyHoodFilter}
-        onChange={(e) =>
-          dispatch({
-            type: 'SET_SUB_TOGGLE',
-            key: 'vacancyHoodFilter',
-            value: e.target.value,
-          })
-        }
+        value={vacancyFilters.vacancyHoodFilter}
+        onChange={(e) => setSubToggle('vacancyHoodFilter', e.target.value)}
         className={selectClass}
       >
         <option value="all">All Neighborhoods</option>
@@ -624,8 +595,7 @@ function VacancyFilters() {
             Score Range
           </span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[0.62rem] font-bold tabular-nums text-foreground">
-            {state.subToggles.vacancyMinScore}–
-            {state.subToggles.vacancyMaxScore}
+            {vacancyFilters.vacancyMinScore}–{vacancyFilters.vacancyMaxScore}
           </span>
         </div>
         <Slider
@@ -633,20 +603,12 @@ function VacancyFilters() {
           max={100}
           step={1}
           value={[
-            state.subToggles.vacancyMinScore,
-            state.subToggles.vacancyMaxScore,
+            vacancyFilters.vacancyMinScore,
+            vacancyFilters.vacancyMaxScore,
           ]}
           onValueChange={(values) => {
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'vacancyMinScore',
-              value: values[0],
-            })
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'vacancyMaxScore',
-              value: values[1],
-            })
+            setSubToggle('vacancyMinScore', values[0])
+            setSubToggle('vacancyMaxScore', values[1])
           }}
         />
       </div>
@@ -655,16 +617,26 @@ function VacancyFilters() {
 }
 
 function FoodAccessFilters() {
-  const { state, dispatch } = useExplorer()
+  const foodToggles = useExplorerStore(
+    useShallow((s) => ({
+      foodDesertTracts: s.subToggles.foodDesertTracts,
+      groceryStores: s.subToggles.groceryStores,
+    })),
+  )
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
 
-  const toggles = [
+  const toggles: Array<{
+    key: 'foodDesertTracts' | 'groceryStores'
+    label: string
+    color: string
+  }> = [
     {
-      key: 'foodDesertTracts' as keyof SubToggles,
+      key: 'foodDesertTracts',
       label: 'Desert Tracts (LILA)',
       color: '#ef4444',
     },
     {
-      key: 'groceryStores' as keyof SubToggles,
+      key: 'groceryStores',
       label: 'Grocery Stores',
       color: '#10b981',
     },
@@ -672,62 +644,58 @@ function FoodAccessFilters() {
 
   return (
     <>
-      {toggles.map((t) => (
-        <label
-          key={t.key}
-          className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
-        >
-          <div
-            className={cn(
-              'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
-              state.subToggles[t.key]
-                ? 'border-transparent'
-                : 'border-muted-foreground/40 bg-transparent',
-            )}
-            style={{
-              background: state.subToggles[t.key] ? t.color : undefined,
-            }}
+      {toggles.map((t) => {
+        const checked = foodToggles[t.key]
+        return (
+          <label
+            key={t.key}
+            className="group/sub flex cursor-pointer items-center gap-2 rounded-md px-1 py-[3px] transition-colors hover:bg-accent/60"
           >
-            {state.subToggles[t.key] && (
-              <svg
-                viewBox="0 0 12 12"
-                className="h-2.5 w-2.5 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2.5 6L5 8.5L9.5 3.5" />
-              </svg>
-            )}
-          </div>
-          <span className="text-[0.62rem] font-medium text-foreground/60 transition-colors group-hover/sub:text-foreground">
-            {t.label}
-          </span>
-          <input
-            type="checkbox"
-            checked={state.subToggles[t.key] as boolean}
-            onChange={() =>
-              dispatch({
-                type: 'SET_SUB_TOGGLE',
-                key: t.key,
-                value: !state.subToggles[t.key],
-              })
-            }
-            className="sr-only"
-          />
-        </label>
-      ))}
+            <div
+              className={cn(
+                'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150',
+                checked ? 'border-transparent' : 'border-muted-foreground/40 bg-transparent',
+              )}
+              style={{ background: checked ? t.color : undefined }}
+            >
+              {checked && (
+                <svg
+                  viewBox="0 0 12 12"
+                  className="h-2.5 w-2.5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M2.5 6L5 8.5L9.5 3.5" />
+                </svg>
+              )}
+            </div>
+            <span className="text-[0.62rem] font-medium text-foreground/60 transition-colors group-hover/sub:text-foreground">
+              {t.label}
+            </span>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => setSubToggle(t.key, !checked)}
+              className="sr-only"
+            />
+          </label>
+        )
+      })}
     </>
   )
 }
 
 function DemographicsFilters() {
-  const { state, dispatch } = useExplorer()
+  const demographicsMetric = useExplorerStore(
+    (s) => s.subToggles.demographicsMetric,
+  )
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
 
   const metrics: Array<{
-    value: string
+    value: SubToggles['demographicsMetric']
     label: string
   }> = [
     { value: 'population', label: 'Population' },
@@ -741,15 +709,9 @@ function DemographicsFilters() {
         <TagButton
           key={m.value}
           label={m.label}
-          isActive={state.subToggles.demographicsMetric === m.value}
+          isActive={demographicsMetric === m.value}
           activeClass="bg-purple-500/20 text-purple-600 dark:text-purple-400"
-          onClick={() =>
-            dispatch({
-              type: 'SET_SUB_TOGGLE',
-              key: 'demographicsMetric',
-              value: m.value,
-            })
-          }
+          onClick={() => setSubToggle('demographicsMetric', m.value)}
         />
       ))}
     </div>
@@ -757,7 +719,8 @@ function DemographicsFilters() {
 }
 
 function HousingFilters() {
-  const { state, dispatch } = useExplorer()
+  const housingMetric = useExplorerStore((s) => s.subToggles.housingMetric)
+  const setSubToggle = useExplorerStore((s) => s.setSubToggle)
 
   return (
     <PillToggle
@@ -765,11 +728,8 @@ function HousingFilters() {
         { value: 'rent', label: 'Median Rent' },
         { value: 'value', label: 'Home Value' },
       ]}
-      value={state.subToggles.housingMetric}
-      onChange={(v) =>
-        dispatch({ type: 'SET_SUB_TOGGLE', key: 'housingMetric', value: v })
-      }
+      value={housingMetric}
+      onChange={(v) => setSubToggle('housingMetric', v as 'rent' | 'value')}
     />
   )
 }
-

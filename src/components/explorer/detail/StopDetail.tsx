@@ -1,22 +1,23 @@
 import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { DetailRow, DetailSection, MetricCard } from './shared'
+import { useDataStore } from '@/stores/data-store'
 
 export function StopDetail({ id }: { id: string }) {
-  const data = useData()
+  const stops = useDataStore((s) => s.stops)
+  const stopStats = useDataStore((s) => s.stopStats)
+  const routes = useDataStore((s) => s.routes)
 
   const stop = useMemo(
-    () =>
-      data.stops?.features.find((f) => f.properties.stop_id === id) ?? null,
-    [data.stops, id],
+    () => stops?.features.find((f) => f.properties.stop_id === id) ?? null,
+    [stops, id],
   )
 
-  const stats = data.stopStats?.[id]
+  const stats = stopStats?.[id]
 
   const routeDetails = useMemo(() => {
-    if (!stats?.routes || !data.routes) return []
-    return data.routes.filter((r) => stats.routes.includes(r.route_id))
-  }, [stats, data.routes])
+    if (!stats?.routes || !routes) return []
+    return routes.filter((r) => stats.routes.includes(r.route_id))
+  }, [stats, routes])
 
   if (!stop) {
     return <div className="text-xs text-muted-foreground">Stop not found</div>
@@ -61,7 +62,7 @@ export function StopDetail({ id }: { id: string }) {
             {routeDetails.map((r) => (
               <div key={r.route_id} className="flex items-center gap-2.5">
                 <span
-                  className="flex h-5 min-w-[2rem] items-center justify-center rounded text-[0.6rem] font-bold text-white"
+                  className="flex h-5 min-w-8 items-center justify-center rounded text-[0.6rem] font-bold text-white"
                   style={{
                     background: r.route_color
                       ? `#${r.route_color}`

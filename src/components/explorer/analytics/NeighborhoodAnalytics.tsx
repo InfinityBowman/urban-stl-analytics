@@ -1,16 +1,16 @@
 import { useMemo } from 'react'
-import { useData, useFailedDatasets } from '../ExplorerProvider'
 import { useNeighborhoodMetrics } from '../detail/useNeighborhoodMetrics'
 import { MiniKpi } from './MiniKpi'
+import { useDataStore } from '@/stores/data-store'
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart'
 
 export function NeighborhoodAnalytics({ id }: { id: string }) {
-  const data = useData()
-  const failed = useFailedDatasets()
+  const csbData = useDataStore((s) => s.csbData)
+  const failed = useDataStore((s) => s.failedDatasets)
   const hoodKey = id.padStart(2, '0')
   const metrics = useNeighborhoodMetrics(id)
 
-  const hood = data.csbData?.neighborhoods[hoodKey]
+  const hood = csbData?.neighborhoods[hoodKey]
 
   const catData = useMemo(
     () =>
@@ -56,7 +56,7 @@ export function NeighborhoodAnalytics({ id }: { id: string }) {
           <div className="mb-1 text-[0.6rem] font-semibold text-muted-foreground">
             Top 311 Issues
           </div>
-          <div className="h-[140px]">
+          <div className="h-35">
             <CategoryBarChart data={catData} horizontal height={140} valueLabel="Complaints" />
           </div>
         </div>

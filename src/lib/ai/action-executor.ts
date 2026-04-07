@@ -1,12 +1,28 @@
 import { resolveNeighborhood } from './neighborhood-resolver'
 import type { ToolCall } from './use-chat'
 import type { ChartBuilderAction } from '@/components/explorer/analytics/chart-builder/useChartBuilder'
-import type { ExplorerAction, ExplorerData, ExplorerState, LayerToggles, SubToggles } from '@/lib/explorer-types'
+import type {
+  ExplorerData,
+  ExplorerState,
+  LayerToggles,
+  SubToggles,
+} from '@/lib/explorer-types'
 import { getDataset, getDatasetFields } from '@/lib/chart-datasets'
+import { useExplorerStore } from '@/stores/explorer-store'
 
 interface ExecutorContext {
+  /**
+   * Snapshot of explorer state taken at the start of a tool batch. Used for
+   * "is this layer already on?" style checks so multiple tools in the same
+   * batch see a consistent view of the world.
+   */
   state: ExplorerState
-  dispatch: React.Dispatch<ExplorerAction>
+  /**
+   * Set of layer keys that this batch has already toggled. Mutated by the
+   * executor so we don't toggle the same layer twice within one batch (the
+   * `state` snapshot would report the old value).
+   */
+  toggledLayers: Set<string>
   chartDispatch: React.Dispatch<ChartBuilderAction>
   data: ExplorerData
 }
@@ -55,22 +71,32 @@ function friendlyLabel(value: string): string {
     .replace(/\//g, ' / ')
 }
 
+/** Toggle a layer unless already toggled in this batch. */
+function toggleLayerOnce(ctx: ExecutorContext, layer: keyof LayerToggles) {
+  if (ctx.toggledLayers.has(layer)) return
+  ctx.toggledLayers.add(layer)
+  useExplorerStore.getState().toggleLayer(layer)
+}
+
 export function executeToolCall(
   toolCall: ToolCall,
   ctx: ExecutorContext,
 ): ActionResult {
-  const { state, dispatch, chartDispatch, data } = ctx
+  const { state, chartDispatch, data } = ctx
+  const store = useExplorerStore.getState()
   const args = toolCall.arguments
 
   switch (toolCall.name) {
     case 'set_layers': {
-      const layers = args.layers as Partial<Record<keyof LayerToggles, boolean>> | undefined
+      const layers = args.layers as
+        | Partial<Record<keyof LayerToggles, boolean>>
+        | undefined
       if (!layers) return { description: 'No layers specified' }
       const toggled: Array<string> = []
       for (const [key, desired] of Object.entries(layers)) {
         const layerKey = key as keyof LayerToggles
         if (layerKey in state.layers && state.layers[layerKey] !== desired) {
-          dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
+          toggleLayerOnce(ctx, layerKey)
           toggled.push(`${desired ? 'Enabled' : 'Disabled'} ${key}`)
         }
       }
@@ -93,7 +119,7 @@ export function executeToolCall(
         if (!(argKey in args)) return
         const raw = args[argKey] as string
         if (raw === 'all') {
-          dispatch({ type: 'SET_SUB_TOGGLE', key: toggleKey, value: 'all' })
+          store.setSubToggle(toggleKey, 'all')
           descriptions.push(`${label}: All`)
           return
         }
@@ -101,9 +127,9 @@ export function executeToolCall(
         if (matched) {
           // Auto-enable the layer if it's off
           if (layerKey && !state.layers[layerKey]) {
-            dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
+            toggleLayerOnce(ctx, layerKey)
           }
-          dispatch({ type: 'SET_SUB_TOGGLE', key: toggleKey, value: matched })
+          store.setSubToggle(toggleKey, matched)
           descriptions.push(`${label}: ${friendlyLabel(matched)}`)
         } else {
           descriptions.push(`${label}: no match for "${raw}"`)
@@ -126,9 +152,9 @@ export function executeToolCall(
           return
         }
         if (layerKey && !state.layers[layerKey]) {
-          dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
+          toggleLayerOnce(ctx, layerKey)
         }
-        dispatch({ type: 'SET_SUB_TOGGLE', key: toggleKey, value: matched })
+        store.setSubToggle(toggleKey, matched)
         descriptions.push(`${label}: ${friendlyLabel(matched)}`)
       }
 
@@ -136,51 +162,115 @@ export function executeToolCall(
       const crimeCategories = data.crimeData
         ? Object.keys(data.crimeData.categories)
         : []
-      resolveCategory('crimeCategory', 'crimeCategory', crimeCategories, 'crime', 'Crime filter')
-      setEnum('crimeMode', 'crimeMode', ['choropleth', 'heatmap'], 'crime', 'Crime view')
+      resolveCategory(
+        'crimeCategory',
+        'crimeCategory',
+        crimeCategories,
+        'crime',
+        'Crime filter',
+      )
+      setEnum(
+        'crimeMode',
+        'crimeMode',
+        ['choropleth', 'heatmap'],
+        'crime',
+        'Crime view',
+      )
 
       // Complaints
       const complaintCategories = data.csbData
         ? Object.keys(data.csbData.categories)
         : []
-      resolveCategory('complaintsCategory', 'complaintsCategory', complaintCategories, 'complaints', 'Complaints filter')
-      setEnum('complaintsMode', 'complaintsMode', ['choropleth', 'heatmap'], 'complaints', 'Complaints view')
+      resolveCategory(
+        'complaintsCategory',
+        'complaintsCategory',
+        complaintCategories,
+        'complaints',
+        'Complaints filter',
+      )
+      setEnum(
+        'complaintsMode',
+        'complaintsMode',
+        ['choropleth', 'heatmap'],
+        'complaints',
+        'Complaints view',
+      )
 
       // Demographics
-      setEnum('demographicsMetric', 'demographicsMetric', ['population', 'vacancyRate', 'popChange'], 'demographics', 'Demographics')
+      setEnum(
+        'demographicsMetric',
+        'demographicsMetric',
+        ['population', 'vacancyRate', 'popChange'],
+        'demographics',
+        'Demographics',
+      )
 
       // ARPA (no map layer — pass null for layerKey)
       const arpaCategories = data.arpaData
         ? Object.keys(data.arpaData.categoryBreakdown)
         : []
-      resolveCategory('arpaCategory', 'arpaCategory', arpaCategories, null, 'ARPA filter')
+      resolveCategory(
+        'arpaCategory',
+        'arpaCategory',
+        arpaCategories,
+        null,
+        'ARPA filter',
+      )
 
       // Housing
-      setEnum('housingMetric', 'housingMetric', ['rent', 'value'], 'housing', 'Housing')
+      setEnum(
+        'housingMetric',
+        'housingMetric',
+        ['rent', 'value'],
+        'housing',
+        'Housing',
+      )
 
       // Transit sub-layers (booleans)
-      for (const key of ['transitStops', 'transitRoutes', 'transitWalkshed'] as const) {
+      for (const key of [
+        'transitStops',
+        'transitRoutes',
+        'transitWalkshed',
+      ] as const) {
         if (key in args) {
           if (!state.layers.transit) {
-            dispatch({ type: 'TOGGLE_LAYER', layer: 'transit' })
+            toggleLayerOnce(ctx, 'transit')
           }
-          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as boolean })
+          store.setSubToggle(key, args[key] as boolean)
           descriptions.push(`${key}: ${args[key] ? 'On' : 'Off'}`)
         }
       }
 
       // Vacancy filters
-      setEnum('vacancyUseFilter', 'vacancyUseFilter', ['all', 'housing', 'solar', 'garden'], 'vacancy', 'Vacancy use')
-      setEnum('vacancyOwnerFilter', 'vacancyOwnerFilter', ['all', 'lra', 'city', 'private'], 'vacancy', 'Vacancy owner')
-      setEnum('vacancyTypeFilter', 'vacancyTypeFilter', ['all', 'building', 'lot'], 'vacancy', 'Vacancy type')
+      setEnum(
+        'vacancyUseFilter',
+        'vacancyUseFilter',
+        ['all', 'housing', 'solar', 'garden'],
+        'vacancy',
+        'Vacancy use',
+      )
+      setEnum(
+        'vacancyOwnerFilter',
+        'vacancyOwnerFilter',
+        ['all', 'lra', 'city', 'private'],
+        'vacancy',
+        'Vacancy owner',
+      )
+      setEnum(
+        'vacancyTypeFilter',
+        'vacancyTypeFilter',
+        ['all', 'building', 'lot'],
+        'vacancy',
+        'Vacancy type',
+      )
 
       if ('vacancyHoodFilter' in args) {
         const raw = args.vacancyHoodFilter as string
         if (!state.layers.vacancy) {
-          dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+          toggleLayerOnce(ctx, 'vacancy')
         }
         if (raw === 'all') {
-          dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyHoodFilter', value: 'all' })
+          store.setSubToggle('vacancyHoodFilter', 'all')
           descriptions.push('Vacancy neighborhood: All')
         } else {
           const hoodNames = data.vacancyData
@@ -188,7 +278,7 @@ export function executeToolCall(
             : []
           const matched = fuzzyMatch(raw, hoodNames)
           if (matched) {
-            dispatch({ type: 'SET_SUB_TOGGLE', key: 'vacancyHoodFilter', value: matched })
+            store.setSubToggle('vacancyHoodFilter', matched)
             descriptions.push(`Vacancy neighborhood: ${matched}`)
           } else {
             descriptions.push(`Vacancy neighborhood: no match for "${raw}"`)
@@ -199,10 +289,10 @@ export function executeToolCall(
       for (const key of ['vacancyMinScore', 'vacancyMaxScore'] as const) {
         if (key in args) {
           if (!state.layers.vacancy) {
-            dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+            toggleLayerOnce(ctx, 'vacancy')
           }
           const val = Number(args[key])
-          dispatch({ type: 'SET_SUB_TOGGLE', key, value: val })
+          store.setSubToggle(key, val)
           descriptions.push(`${key}: ${val}`)
         }
       }
@@ -211,9 +301,9 @@ export function executeToolCall(
       for (const key of ['foodDesertTracts', 'groceryStores'] as const) {
         if (key in args) {
           if (!state.layers.foodAccess) {
-            dispatch({ type: 'TOGGLE_LAYER', layer: 'foodAccess' })
+            toggleLayerOnce(ctx, 'foodAccess')
           }
-          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as boolean })
+          store.setSubToggle(key, args[key] as boolean)
           descriptions.push(`${key}: ${args[key] ? 'On' : 'Off'}`)
         }
       }
@@ -221,7 +311,7 @@ export function executeToolCall(
       // Time range
       for (const key of ['timeRangeStart', 'timeRangeEnd'] as const) {
         if (key in args) {
-          dispatch({ type: 'SET_SUB_TOGGLE', key, value: args[key] as string })
+          store.setSubToggle(key, args[key] as string)
           descriptions.push(`${key}: ${args[key] || '(cleared)'}`)
         }
       }
@@ -240,10 +330,7 @@ export function executeToolCall(
       if (!resolved) {
         return { description: `No match for "${name}"` }
       }
-      dispatch({
-        type: 'SELECT_ENTITY',
-        entity: { type: 'neighborhood', id: resolved.nhdNum },
-      })
+      store.selectEntity({ type: 'neighborhood', id: resolved.nhdNum })
       return { description: `Selected ${resolved.name}` }
     }
 
@@ -251,28 +338,16 @@ export function executeToolCall(
       const entityType = args.type as string
       const entityId = args.id as string
       if (entityType === 'stop') {
-        dispatch({
-          type: 'SELECT_ENTITY',
-          entity: { type: 'stop', id: entityId },
-        })
+        store.selectEntity({ type: 'stop', id: entityId })
       } else if (entityType === 'grocery') {
-        dispatch({
-          type: 'SELECT_ENTITY',
-          entity: { type: 'grocery', id: Number(entityId) },
-        })
+        store.selectEntity({ type: 'grocery', id: Number(entityId) })
       } else if (entityType === 'foodDesert') {
-        dispatch({
-          type: 'SELECT_ENTITY',
-          entity: { type: 'foodDesert', id: entityId },
-        })
+        store.selectEntity({ type: 'foodDesert', id: entityId })
       } else if (entityType === 'vacancy') {
         if (!state.layers.vacancy) {
-          dispatch({ type: 'TOGGLE_LAYER', layer: 'vacancy' })
+          toggleLayerOnce(ctx, 'vacancy')
         }
-        dispatch({
-          type: 'SELECT_ENTITY',
-          entity: { type: 'vacancy', id: Number(entityId) },
-        })
+        store.selectEntity({ type: 'vacancy', id: Number(entityId) })
       }
       return { description: `Selected ${entityType} ${entityId}` }
     }
@@ -280,10 +355,12 @@ export function executeToolCall(
     case 'toggle_analytics': {
       const expanded = args.expanded as boolean
       if (state.analyticsPanelExpanded !== expanded) {
-        dispatch({ type: 'TOGGLE_ANALYTICS' })
+        store.toggleAnalytics()
       }
       return {
-        description: expanded ? 'Opened analytics panel' : 'Closed analytics panel',
+        description: expanded
+          ? 'Opened analytics panel'
+          : 'Closed analytics panel',
       }
     }
 
@@ -299,17 +376,17 @@ export function executeToolCall(
       // Ensure required layers are on
       for (const layer of def.requiredLayers) {
         if (!state.layers[layer]) {
-          dispatch({ type: 'TOGGLE_LAYER', layer })
+          toggleLayerOnce(ctx, layer)
         }
       }
 
       // Open analytics if closed
       if (!state.analyticsPanelExpanded) {
-        dispatch({ type: 'TOGGLE_ANALYTICS' })
+        store.toggleAnalytics()
       }
 
       // Switch to the chart builder tab
-      dispatch({ type: 'SET_ANALYTICS_TAB', tab: 'chart' })
+      store.setAnalyticsTab('chart')
 
       const fields = getDatasetFields(def, data)
       chartDispatch({ type: 'SET_DATASET', datasetKey, fields, def })
@@ -327,13 +404,13 @@ export function executeToolCall(
     }
 
     case 'clear_selection': {
-      dispatch({ type: 'CLEAR_SELECTION' })
+      store.clearSelection()
       return { description: 'Cleared selection' }
     }
 
     case 'set_map_style': {
       const style = args.style as 'light' | 'dark' | 'satellite' | 'streets'
-      dispatch({ type: 'SET_MAP_STYLE', style })
+      store.setMapStyle(style)
       return { description: `Map style: ${style}` }
     }
 
@@ -343,7 +420,7 @@ export function executeToolCall(
 
       if (!enabled) {
         if (state.compareMode) {
-          dispatch({ type: 'TOGGLE_COMPARE_MODE' })
+          store.toggleCompareMode()
           descriptions.push('Exited compare mode')
         } else {
           descriptions.push('Compare mode already off')
@@ -353,16 +430,19 @@ export function executeToolCall(
 
       // Enable compare mode if off
       if (!state.compareMode) {
-        dispatch({ type: 'TOGGLE_COMPARE_MODE' })
+        store.toggleCompareMode()
         descriptions.push('Entered compare mode')
       }
 
       // Resolve neighborhoods A and B
       const resolveSlot = (argKey: string, slot: 'A' | 'B') => {
         if (!args[argKey] || !data.neighborhoods) return
-        const resolved = resolveNeighborhood(args[argKey] as string, data.neighborhoods)
+        const resolved = resolveNeighborhood(
+          args[argKey] as string,
+          data.neighborhoods,
+        )
         if (resolved) {
-          dispatch({ type: 'SET_COMPARE_NEIGHBORHOOD', slot, id: resolved.nhdNum })
+          store.setCompareNeighborhood(slot, resolved.nhdNum)
           descriptions.push(`${slot}: ${resolved.name}`)
         } else {
           descriptions.push(`${slot}: no match for "${args[argKey]}"`)
@@ -379,7 +459,7 @@ export function executeToolCall(
 
       // Open analytics panel if closed
       if (!state.analyticsPanelExpanded) {
-        dispatch({ type: 'TOGGLE_ANALYTICS' })
+        store.toggleAnalytics()
       }
 
       // Auto-enable the associated layer (chart tab has no layer).
@@ -394,10 +474,10 @@ export function executeToolCall(
       }
       const layerKey = tabLayerMap[tab]
       if (layerKey && !state.layers[layerKey]) {
-        dispatch({ type: 'TOGGLE_LAYER', layer: layerKey })
+        toggleLayerOnce(ctx, layerKey)
       }
 
-      dispatch({ type: 'SET_ANALYTICS_TAB', tab })
+      store.setAnalyticsTab(tab)
       return { description: `Switched to ${tab} analytics tab` }
     }
 

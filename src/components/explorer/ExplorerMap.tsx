@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { useData, useExplorer } from './ExplorerProvider'
+import { useCallback, useMemo } from 'react'
 import { NeighborhoodBaseLayer } from './layers/NeighborhoodBaseLayer'
 import { ComplaintsLayer } from './layers/ComplaintsLayer'
 import { TransitLayer } from './layers/TransitLayer'
@@ -10,6 +9,8 @@ import { DemographicsLayer } from './layers/DemographicsLayer'
 import { HousingLayer } from './layers/HousingLayer'
 import { TimeRangeSlider } from './TimeRangeSlider'
 import type { MapStyle } from '@/lib/explorer-types'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { MapProvider } from '@/components/map/MapProvider'
 import {
   GradientSection,
@@ -45,16 +46,17 @@ const STYLE_LABELS: Record<MapStyle, string> = {
 }
 
 function MapStyleToggle() {
-  const { state, dispatch } = useExplorer()
+  const mapStyle = useExplorerStore((s) => s.mapStyle)
+  const setMapStyle = useExplorerStore((s) => s.setMapStyle)
 
   return (
     <div className="absolute top-2.5 left-2.5 z-10 flex gap-0.5 rounded-md border border-border/60 bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
       {(Object.keys(MAP_STYLES) as Array<MapStyle>).map((style) => (
         <button
           key={style}
-          onClick={() => dispatch({ type: 'SET_MAP_STYLE', style })}
+          onClick={() => setMapStyle(style)}
           className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-            state.mapStyle === style
+            mapStyle === style
               ? 'bg-brand text-white'
               : 'text-muted-foreground hover:text-foreground'
           }`}
@@ -67,27 +69,21 @@ function MapStyleToggle() {
 }
 
 export function ExplorerMap() {
-  const { state, dispatch } = useExplorer()
-  const data = useData()
-
-  // Use refs to always have current state in map event handlers
-  const stateRef = useRef(state)
-  const dispatchRef = useRef(dispatch)
-
-  useEffect(() => {
-    stateRef.current = state
-    dispatchRef.current = dispatch
-  }, [state, dispatch])
+  const mapStyle = useExplorerStore((s) => s.mapStyle)
+  const layers = useExplorerStore((s) => s.layers)
+  const subToggles = useExplorerStore((s) => s.subToggles)
+  const vacancyData = useDataStore((s) => s.vacancyData)
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
 
   const handleMapLoad = useCallback((map: mapboxgl.Map) => {
-    // Unified click handler using queryRenderedFeatures
+    // Unified click handler. Reads live state via getState() so the closure
+    // doesn't need to be recreated on every state change.
     map.on('click', (e) => {
+      const explorer = useExplorerStore.getState()
       const point = e.point
-      const currentState = stateRef.current
-      const currentDispatch = dispatchRef.current
 
       // In compare mode, only handle neighborhood clicks for comparison
-      if (currentState.compareMode) {
+      if (explorer.compareMode) {
         const hoodFeatures = map
           .queryRenderedFeatures(point, {
             layers: ['neighborhood-base-fill'],
@@ -98,25 +94,13 @@ export function ExplorerMap() {
           if (nhdNum != null) {
             const hoodId = String(nhdNum).padStart(2, '0')
             // If A is empty, set A; else if B is empty, set B; else replace A
-            if (!currentState.compareNeighborhoodA) {
-              currentDispatch({
-                type: 'SET_COMPARE_NEIGHBORHOOD',
-                slot: 'A',
-                id: hoodId,
-              })
-            } else if (!currentState.compareNeighborhoodB) {
-              currentDispatch({
-                type: 'SET_COMPARE_NEIGHBORHOOD',
-                slot: 'B',
-                id: hoodId,
-              })
+            if (!explorer.compareNeighborhoodA) {
+              explorer.setCompareNeighborhood('A', hoodId)
+            } else if (!explorer.compareNeighborhoodB) {
+              explorer.setCompareNeighborhood('B', hoodId)
             } else {
               // Both filled - replace A
-              currentDispatch({
-                type: 'SET_COMPARE_NEIGHBORHOOD',
-                slot: 'A',
-                id: hoodId,
-              })
+              explorer.setCompareNeighborhood('A', hoodId)
             }
             return
           }
@@ -131,10 +115,7 @@ export function ExplorerMap() {
       if (vacancyFeatures.length > 0) {
         const id = vacancyFeatures[0].properties?.id
         if (id != null) {
-          currentDispatch({
-            type: 'SELECT_ENTITY',
-            entity: { type: 'vacancy', id: Number(id) },
-          })
+          explorer.selectEntity({ type: 'vacancy', id: Number(id) })
           return
         }
       }
@@ -146,10 +127,7 @@ export function ExplorerMap() {
       if (stopFeatures.length > 0) {
         const id = stopFeatures[0].properties?.stop_id
         if (id) {
-          currentDispatch({
-            type: 'SELECT_ENTITY',
-            entity: { type: 'stop', id: String(id) },
-          })
+          explorer.selectEntity({ type: 'stop', id: String(id) })
           return
         }
       }
@@ -161,10 +139,7 @@ export function ExplorerMap() {
       if (groceryFeatures.length > 0) {
         const idx = groceryFeatures[0].properties?.idx
         if (idx != null) {
-          currentDispatch({
-            type: 'SELECT_ENTITY',
-            entity: { type: 'grocery', id: Number(idx) },
-          })
+          explorer.selectEntity({ type: 'grocery', id: Number(idx) })
           return
         }
       }
@@ -176,10 +151,7 @@ export function ExplorerMap() {
       if (desertFeatures.length > 0) {
         const tractId = desertFeatures[0].properties?.tract_id
         if (tractId) {
-          currentDispatch({
-            type: 'SELECT_ENTITY',
-            entity: { type: 'foodDesert', id: String(tractId) },
-          })
+          explorer.selectEntity({ type: 'foodDesert', id: String(tractId) })
           return
         }
       }
@@ -191,22 +163,20 @@ export function ExplorerMap() {
       if (hoodFeatures.length > 0) {
         const nhdNum = hoodFeatures[0].properties?.NHD_NUM
         if (nhdNum != null) {
-          currentDispatch({
-            type: 'SELECT_ENTITY',
-            entity: {
-              type: 'neighborhood',
-              id: String(nhdNum).padStart(2, '0'),
-            },
+          explorer.selectEntity({
+            type: 'neighborhood',
+            id: String(nhdNum).padStart(2, '0'),
           })
           return
         }
       }
 
       // Empty space — clear
-      currentDispatch({ type: 'CLEAR_SELECTION' })
+      explorer.clearSelection()
     })
 
-    // Pointer cursor on hover
+    // Pointer cursor on hover - use Mapbox's per-layer enter/leave events
+    // instead of querying all layers on every mousemove.
     const interactiveLayers = [
       'vacancy-circles',
       'stops-circles',
@@ -214,90 +184,89 @@ export function ExplorerMap() {
       'desert-fill',
       'neighborhood-base-fill',
     ]
-
-    map.on('mousemove', (e) => {
-      const activeLayers = interactiveLayers.filter((l) => map.getLayer(l))
-      if (activeLayers.length === 0) return
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: activeLayers,
+    for (const layer of interactiveLayers) {
+      map.on('mouseenter', layer, () => {
+        if (map.getLayer(layer)) map.getCanvas().style.cursor = 'pointer'
       })
-      map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
-    })
+      map.on('mouseleave', layer, () => {
+        map.getCanvas().style.cursor = ''
+      })
+    }
   }, [])
 
   const complaintsTitle = useMemo(() => {
-    if (!state.layers.complaints) return ''
-    const { complaintsMode, complaintsCategory } = state.subToggles
+    if (!layers.complaints) return ''
+    const { complaintsMode, complaintsCategory } = subToggles
     if (complaintsMode === 'heatmap') return 'Complaint Density'
     return complaintsCategory === 'all' ? '311 Complaints' : complaintsCategory
-  }, [state.layers.complaints, state.subToggles])
+  }, [layers.complaints, subToggles])
 
   const crimeTitle = useMemo(() => {
-    if (!state.layers.crime) return ''
-    const { crimeMode, crimeCategory } = state.subToggles
+    if (!layers.crime) return ''
+    const { crimeMode, crimeCategory } = subToggles
     if (crimeMode === 'heatmap') return 'Crime Density'
     return crimeCategory === 'all' ? 'Crime Incidents' : crimeCategory
-  }, [state.layers.crime, state.subToggles])
+  }, [layers.crime, subToggles])
 
   const demoTitle = useMemo(() => {
-    if (!state.layers.demographics) return ''
+    if (!layers.demographics) return ''
     const titles: Record<string, string> = {
       population: 'Population (2020)',
       vacancyRate: 'Vacancy Rate %',
       popChange: 'Pop Change %',
     }
-    return titles[state.subToggles.demographicsMetric] ?? 'Demographics'
-  }, [state.layers.demographics, state.subToggles.demographicsMetric])
+    return titles[subToggles.demographicsMetric] ?? 'Demographics'
+  }, [layers.demographics, subToggles.demographicsMetric])
 
   const housingTitle = useMemo(() => {
-    if (!state.layers.housing) return ''
-    return state.subToggles.housingMetric === 'rent'
+    if (!layers.housing) return ''
+    return subToggles.housingMetric === 'rent'
       ? 'Median Rent ($)'
       : 'Median Home Value ($)'
-  }, [state.layers.housing, state.subToggles.housingMetric])
+  }, [layers.housing, subToggles.housingMetric])
 
   const vacancyBreaks = useMemo(() => {
-    if (!state.layers.vacancy || !data.vacancyData) return percentileBreaks([])
-    return percentileBreaks(data.vacancyData.map((p) => p.triageScore))
-  }, [state.layers.vacancy, data.vacancyData])
+    if (!layers.vacancy || !vacancyData) return percentileBreaks([])
+    return percentileBreaks(vacancyData.map((p) => p.triageScore))
+  }, [layers.vacancy, vacancyData])
 
   const hasLegend =
-    state.layers.complaints ||
-    state.layers.crime ||
-    state.layers.demographics ||
-    state.layers.vacancy ||
-    state.layers.foodAccess ||
-    state.layers.transit ||
-    state.layers.housing
+    layers.complaints ||
+    layers.crime ||
+    layers.demographics ||
+    layers.vacancy ||
+    layers.foodAccess ||
+    layers.transit ||
+    layers.housing
 
   return (
     <MapProvider
       className="h-full w-full"
-      mapStyle={MAP_STYLES[state.mapStyle]}
+      mapStyle={MAP_STYLES[mapStyle]}
       onMapLoad={handleMapLoad}
     >
       <MapStyleToggle />
-      {data.neighborhoods && <NeighborhoodBaseLayer />}
-      {state.layers.complaints && <ComplaintsLayer />}
-      {state.layers.crime && <CrimeLayer />}
-      {state.layers.transit && <TransitLayer />}
-      {state.layers.vacancy && <VacancyLayer />}
-      {state.layers.foodAccess && <FoodAccessLayer />}
-      {state.layers.demographics && <DemographicsLayer />}
-      {state.layers.housing && <HousingLayer />}
+      {neighborhoods && <NeighborhoodBaseLayer />}
+      {layers.complaints && <ComplaintsLayer />}
+      {layers.crime && <CrimeLayer />}
+      {layers.transit && <TransitLayer />}
+      {layers.vacancy && <VacancyLayer />}
+      {layers.foodAccess && <FoodAccessLayer />}
+      {layers.demographics && <DemographicsLayer />}
+      {layers.housing && <HousingLayer />}
 
       {hasLegend && (
         <MapLegend>
-          {state.layers.complaints && (
+          {layers.complaints && (
             <GradientSection title={complaintsTitle} colors={CHORO_COLORS} />
           )}
-          {state.layers.crime && (
+          {layers.crime && (
             <GradientSection title={crimeTitle} colors={CRIME_COLORS} />
           )}
-          {state.layers.demographics && (
+          {layers.demographics && (
             <GradientSection title={demoTitle} colors={DEMO_COLORS} />
           )}
-          {state.layers.vacancy && (
+          {layers.vacancy && (
             <>
               <div>
                 <div className="mb-1 flex items-center gap-1">
@@ -389,7 +358,7 @@ export function ExplorerMap() {
               />
             </>
           )}
-          {state.layers.foodAccess && (
+          {layers.foodAccess && (
             <SwatchSection
               title="Food Access"
               items={[
@@ -398,7 +367,7 @@ export function ExplorerMap() {
               ]}
             />
           )}
-          {state.layers.transit && (
+          {layers.transit && (
             <>
               <SwatchSection
                 title="Transit"
@@ -426,7 +395,7 @@ export function ExplorerMap() {
               />
             </>
           )}
-          {state.layers.housing && (
+          {layers.housing && (
             <GradientSection title={housingTitle} colors={CHORO_COLORS} />
           )}
         </MapLegend>

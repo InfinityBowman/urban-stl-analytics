@@ -1,18 +1,19 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 import { DEMO_COLORS, dynamicBreaks } from '@/lib/colors'
 
 export function DemographicsLayer() {
-  const { state } = useExplorer()
-  const data = useData()
-  const metric = state.subToggles.demographicsMetric
+  const neighborhoods = useDataStore((s) => s.neighborhoods)
+  const demographicsData = useDataStore((s) => s.demographicsData)
+  const metric = useExplorerStore((s) => s.subToggles.demographicsMetric)
 
   const choroplethGeo = useMemo(() => {
-    if (!data.neighborhoods || !data.demographicsData) return null
-    const features = data.neighborhoods.features.map((f) => {
+    if (!neighborhoods || !demographicsData) return null
+    const features = neighborhoods.features.map((f) => {
       const nhdNum = String(f.properties.NHD_NUM).padStart(2, '0')
-      const demo = data.demographicsData![nhdNum]
+      const demo = demographicsData[nhdNum]
       let value = 0
       if (demo) {
         switch (metric) {
@@ -33,7 +34,7 @@ export function DemographicsLayer() {
       }
     })
     return { type: 'FeatureCollection' as const, features }
-  }, [data.neighborhoods, data.demographicsData, metric])
+  }, [neighborhoods, demographicsData, metric])
 
   const breaks = useMemo(() => {
     if (!choroplethGeo) return dynamicBreaks([])
@@ -50,7 +51,7 @@ export function DemographicsLayer() {
     ...breaks.slice(1).flatMap((b, i) => [b, DEMO_COLORS[i + 1]]),
   ]
 
-  if (!data.demographicsData || !data.neighborhoods) return null
+  if (!demographicsData || !neighborhoods) return null
 
   return (
     <>

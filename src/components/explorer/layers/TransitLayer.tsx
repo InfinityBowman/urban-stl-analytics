@@ -1,16 +1,22 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 
 export function TransitLayer() {
-  const { state } = useExplorer()
-  const data = useData()
+  const stops = useDataStore((s) => s.stops)
+  const stopStats = useDataStore((s) => s.stopStats)
+  const shapes = useDataStore((s) => s.shapes)
+
+  const walkshedOn = useExplorerStore((s) => s.subToggles.transitWalkshed)
+  const routesOn = useExplorerStore((s) => s.subToggles.transitRoutes)
+  const stopsOn = useExplorerStore((s) => s.subToggles.transitStops)
 
   // Stops with stats
   const stopsWithStats = useMemo(() => {
-    if (!data.stops || !data.stopStats) return null
-    const features = data.stops.features.map((stop) => {
-      const stats = data.stopStats![stop.properties.stop_id as string] || {
+    if (!stops || !stopStats) return null
+    const features = stops.features.map((stop) => {
+      const stats = stopStats[stop.properties.stop_id as string] || {
         trip_count: 0,
         routes: [],
       }
@@ -24,12 +30,12 @@ export function TransitLayer() {
       }
     })
     return { type: 'FeatureCollection' as const, features }
-  }, [data.stops, data.stopStats])
+  }, [stops, stopStats])
 
   // Walkshed circles
   const walkshedGeo = useMemo(() => {
-    if (!data.stops) return null
-    const features = data.stops.features.map((stop) => ({
+    if (!stops) return null
+    const features = stops.features.map((stop) => ({
       type: 'Feature' as const,
       properties: {},
       geometry: {
@@ -38,14 +44,14 @@ export function TransitLayer() {
       },
     }))
     return { type: 'FeatureCollection' as const, features }
-  }, [data.stops])
+  }, [stops])
 
-  if (!data.stops) return null
+  if (!stops) return null
 
   return (
     <>
       {/* Walkshed */}
-      {state.subToggles.transitWalkshed && walkshedGeo && (
+      {walkshedOn && walkshedGeo && (
         <Source id="walkshed" type="geojson" data={walkshedGeo}>
           <Layer
             id="walkshed-circles"
@@ -73,8 +79,8 @@ export function TransitLayer() {
       )}
 
       {/* Routes */}
-      {state.subToggles.transitRoutes && data.shapes && (
-        <Source id="transit-routes" type="geojson" data={data.shapes}>
+      {routesOn && shapes && (
+        <Source id="transit-routes" type="geojson" data={shapes}>
           <Layer
             id="route-lines"
             type="line"
@@ -88,7 +94,7 @@ export function TransitLayer() {
       )}
 
       {/* Stops */}
-      {state.subToggles.transitStops && stopsWithStats && (
+      {stopsOn && stopsWithStats && (
         <Source id="transit-stops" type="geojson" data={stopsWithStats}>
           <Layer
             id="stops-circles"

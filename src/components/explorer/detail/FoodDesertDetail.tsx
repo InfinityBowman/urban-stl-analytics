@@ -1,21 +1,22 @@
 import { useMemo } from 'react'
-import { useData } from '../ExplorerProvider'
 import { DetailRow, DetailSection, MetricCard } from './shared'
+import { useDataStore } from '@/stores/data-store'
 import { haversine, polygonCentroid } from '@/lib/equity'
 import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 
 export function FoodDesertDetail({ id }: { id: string }) {
-  const data = useData()
+  const foodDeserts = useDataStore((s) => s.foodDeserts)
+  const stops = useDataStore((s) => s.stops)
+  const stopStats = useDataStore((s) => s.stopStats)
+  const groceryStores = useDataStore((s) => s.groceryStores)
 
   const tract = useMemo(() => {
-    if (!data.foodDeserts) return null
+    if (!foodDeserts) return null
     return (
-      data.foodDeserts.features.find(
-        (f) => f.properties.tract_id === id,
-      ) ?? null
+      foodDeserts.features.find((f) => f.properties.tract_id === id) ?? null
     )
-  }, [data.foodDeserts, id])
+  }, [foodDeserts, id])
 
   const props = tract?.properties
 
@@ -25,25 +26,25 @@ export function FoodDesertDetail({ id }: { id: string }) {
 
   // Nearby stops + frequency
   const nearbyStopData = useMemo(() => {
-    if (!data.stops || !centroid) return { count: 0, frequency: 0 }
+    if (!stops || !centroid) return { count: 0, frequency: 0 }
     let count = 0
     let frequency = 0
-    data.stops.features.forEach((stop) => {
+    stops.features.forEach((stop) => {
       const [lon, lat] = stop.geometry.coordinates as Array<number>
       if (haversine(centroid[0], centroid[1], lat, lon) <= 0.5) {
         count++
-        const stats = data.stopStats?.[stop.properties.stop_id as string]
+        const stats = stopStats?.[stop.properties.stop_id as string]
         if (stats) frequency += stats.trip_count
       }
     })
     return { count, frequency }
-  }, [data.stops, data.stopStats, centroid])
+  }, [stops, stopStats, centroid])
 
   // Nearest grocery
   const nearestGrocery = useMemo(() => {
-    if (!data.groceryStores || !centroid) return null
+    if (!groceryStores || !centroid) return null
     let nearest: { name: string; dist: number } | null = null
-    for (const store of data.groceryStores.features) {
+    for (const store of groceryStores.features) {
       const [lon, lat] = store.geometry.coordinates as Array<number>
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (!nearest || dist < nearest.dist) {
@@ -51,31 +52,29 @@ export function FoodDesertDetail({ id }: { id: string }) {
       }
     }
     return nearest
-  }, [data.groceryStores, centroid])
+  }, [groceryStores, centroid])
 
   // Grocery accessible via transit
   const groceryAccessible = useMemo(() => {
-    if (!data.stops || !data.stopStats || !data.groceryStores || !centroid)
-      return false
-    for (const store of data.groceryStores.features) {
+    if (!stops || !stopStats || !groceryStores || !centroid) return false
+    for (const store of groceryStores.features) {
       const [sLon, sLat] = store.geometry.coordinates as Array<number>
-      for (const stop of data.stops.features) {
+      for (const stop of stops.features) {
         const [bLon, bLat] = stop.geometry.coordinates as Array<number>
         if (haversine(sLat, sLon, bLat, bLon) > 0.25) continue
-        const stats = data.stopStats[stop.properties.stop_id as string]
+        const stats = stopStats[stop.properties.stop_id as string]
         if (!stats?.routes.length) continue
-        for (const tractStop of data.stops.features) {
+        for (const tractStop of stops.features) {
           const [tLon, tLat] = tractStop.geometry.coordinates as Array<number>
           if (haversine(centroid[0], centroid[1], tLat, tLon) > 0.5) continue
-          const tractStats =
-            data.stopStats[tractStop.properties.stop_id as string]
+          const tractStats = stopStats[tractStop.properties.stop_id as string]
           if (tractStats?.routes.some((r) => stats.routes.includes(r)))
             return true
         }
       }
     }
     return false
-  }, [data.stops, data.stopStats, data.groceryStores, centroid])
+  }, [stops, stopStats, groceryStores, centroid])
 
   // Equity score
   const equityScore = useMemo(() => {

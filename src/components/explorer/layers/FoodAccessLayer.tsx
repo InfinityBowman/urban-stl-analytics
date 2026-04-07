@@ -1,27 +1,28 @@
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
-import { useData, useExplorer } from '../ExplorerProvider'
-import type { FoodDesertProperties } from '@/lib/types'
+import { useDataStore } from '@/stores/data-store'
+import { useExplorerStore } from '@/stores/explorer-store'
 
 export function FoodAccessLayer() {
-  const { state } = useExplorer()
-  const data = useData()
+  const foodDeserts = useDataStore((s) => s.foodDeserts)
+  const groceryStores = useDataStore((s) => s.groceryStores)
+
+  const showDesertTracts = useExplorerStore((s) => s.subToggles.foodDesertTracts)
+  const showGroceryStores = useExplorerStore((s) => s.subToggles.groceryStores)
 
   const desertGeo = useMemo(() => {
-    if (!data.foodDeserts) return null
+    if (!foodDeserts) return null
     return {
       type: 'FeatureCollection' as const,
-      features: data.foodDeserts.features.filter(
-        (f) => (f.properties).lila,
-      ),
+      features: foodDeserts.features.filter((f) => f.properties.lila),
     }
-  }, [data.foodDeserts])
+  }, [foodDeserts])
 
   const groceryPointsGeo = useMemo(() => {
-    if (!data.groceryStores) return null
+    if (!groceryStores) return null
     return {
       type: 'FeatureCollection' as const,
-      features: data.groceryStores.features.map((s, i) => ({
+      features: groceryStores.features.map((s, i) => ({
         type: 'Feature' as const,
         properties: { ...s.properties, idx: i },
         geometry: {
@@ -30,14 +31,14 @@ export function FoodAccessLayer() {
         },
       })),
     }
-  }, [data.groceryStores])
+  }, [groceryStores])
 
-  if (!data.foodDeserts) return null
+  if (!foodDeserts) return null
 
   return (
     <>
       {/* Food desert tracts */}
-      {state.subToggles.foodDesertTracts && desertGeo && (
+      {showDesertTracts && desertGeo && (
         <Source id="food-deserts" type="geojson" data={desertGeo}>
           <Layer
             id="desert-fill"
@@ -70,7 +71,7 @@ export function FoodAccessLayer() {
       )}
 
       {/* Grocery stores */}
-      {state.subToggles.groceryStores && groceryPointsGeo && (
+      {showGroceryStores && groceryPointsGeo && (
         <Source id="grocery-stores" type="geojson" data={groceryPointsGeo}>
           <Layer
             id="grocery-circles"
