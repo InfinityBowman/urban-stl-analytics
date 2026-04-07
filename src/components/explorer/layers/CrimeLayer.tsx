@@ -67,7 +67,7 @@ export function CrimeLayer() {
         if (category === 'all') {
           count = hood.total
         } else {
-          count = hood.topOffenses?.[category] ?? 0
+          count = hood.topOffenses[category] ?? 0
         }
       }
       return {
@@ -100,7 +100,7 @@ export function CrimeLayer() {
   return (
     <>
       {mode === 'choropleth' && choroplethGeo && (
-        <Source id="crime-choropleth" type="geojson" data={choroplethGeo}>
+        <Source id="crime-choropleth" type="geojson" data={choroplethGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="crime-choropleth-fill"
             type="fill"

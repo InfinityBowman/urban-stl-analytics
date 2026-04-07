@@ -8,20 +8,14 @@ interface RaceBreakdownChartProps {
 
 export function RaceBreakdownChart({ demographics }: RaceBreakdownChartProps) {
   const data = useMemo(() => {
-    const totals: Record<string, number> = {
-      White: 0,
-      Black: 0,
-      Hispanic: 0,
-      Asian: 0,
-      Other: 0,
-    }
+    const totals = { White: 0, Black: 0, Hispanic: 0, Asian: 0, Other: 0 }
 
     for (const d of Object.values(demographics)) {
-      totals['White'] += d.race.white
-      totals['Black'] += d.race.black
-      totals['Hispanic'] += d.race.hispanic
-      totals['Asian'] += d.race.asian
-      totals['Other'] += d.race.other
+      totals.White += d.race.white
+      totals.Black += d.race.black
+      totals.Hispanic += d.race.hispanic
+      totals.Asian += d.race.asian
+      totals.Other += d.race.other
     }
 
     return Object.entries(totals)

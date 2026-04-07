@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { DetailRow, DetailSection, MetricCard } from './shared'
+import { DetailRow, DetailSection } from './shared'
 import { useDataStore } from '@/stores/data-store'
-import { haversine } from '@/lib/equity'
+import { haversine, polygonCentroid } from '@/lib/equity'
 
 export function GroceryDetail({ id }: { id: number }) {
   const groceryStores = useDataStore((s) => s.groceryStores)
@@ -11,19 +11,14 @@ export function GroceryDetail({ id }: { id: number }) {
 
   const nearestDesert = useMemo(() => {
     if (!store || !foodDeserts) return null
-    const [sLon, sLat] = store.geometry.coordinates as Array<number>
+    const [sLon, sLat] = store.geometry.coordinates as [number, number]
     let nearest: { name: string; dist: number; tractId: string } | null = null
 
     for (const f of foodDeserts.features) {
       const p = f.properties
       if (!p.lila) continue
-      const coords = f.geometry.coordinates as Array<Array<Array<number>>>
-      const centroid = coords[0].reduce(
-        (acc, pt) => [
-          acc[0] + pt[1] / coords[0].length,
-          acc[1] + pt[0] / coords[0].length,
-        ],
-        [0, 0],
+      const centroid = polygonCentroid(
+        f.geometry.coordinates as Array<Array<Array<number>>>,
       )
       const dist = haversine(sLat, sLon, centroid[0], centroid[1])
       if (!nearest || dist < nearest.dist) {
@@ -38,7 +33,7 @@ export function GroceryDetail({ id }: { id: number }) {
     return <div className="text-xs text-muted-foreground">Store not found</div>
   }
 
-  const [lon, lat] = store.geometry.coordinates as Array<number>
+  const [lon, lat] = store.geometry.coordinates as [number, number]
 
   return (
     <div className="flex flex-col gap-3 text-xs">

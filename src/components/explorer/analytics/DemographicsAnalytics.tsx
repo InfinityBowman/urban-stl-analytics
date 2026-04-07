@@ -10,7 +10,7 @@ export function DemographicsAnalytics() {
   const kpis = useMemo(() => {
     if (!demographicsData) return null
     const hoods = Object.values(demographicsData)
-    const totalPop = hoods.reduce((s, h) => s + (h.population['2020'] ?? 0), 0)
+    const totalPop = hoods.reduce((s, h) => s + h.population['2020'], 0)
     const totalUnits = hoods.reduce((s, h) => s + h.housing.totalUnits, 0)
     const totalVacant = hoods.reduce((s, h) => s + h.housing.vacant, 0)
     const avgVacancy = totalUnits > 0 ? (totalVacant / totalUnits) * 100 : 0
@@ -33,7 +33,7 @@ export function DemographicsAnalytics() {
     return Object.entries(demographicsData)
       .map(([, h]) => ({
         name: h.name,
-        value: h.population['2020'] ?? 0,
+        value: h.population['2020'],
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 12)

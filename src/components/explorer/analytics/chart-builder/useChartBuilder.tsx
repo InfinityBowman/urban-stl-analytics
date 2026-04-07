@@ -35,14 +35,11 @@ function uid() {
 
 function pickColor(existing: Array<SeriesConfig>): string {
   const usedColors = new Set(existing.map((s) => s.color))
-  return (
-    CATEGORY_COLORS.find((c) => !usedColors.has(c)) ?? CATEGORY_COLORS[0]
-  )
+  return CATEGORY_COLORS.find((c) => !usedColors.has(c)) ?? CATEGORY_COLORS[0]!
 }
 
-function smartChartType(field: FieldDef, xField: FieldDef | undefined): ChartType {
+function smartChartType(xField: FieldDef | undefined): ChartType {
   if (xField?.type === 'date') return 'line'
-  if (xField?.type === 'category') return 'bar'
   return 'bar'
 }
 
@@ -51,19 +48,18 @@ function buildSeriesFromPreset(
   fields: Array<FieldDef>,
 ): { xAxisField: string; series: Array<SeriesConfig> } {
   const series: Array<SeriesConfig> = []
-  for (let i = 0; i < preset.series.length; i++) {
-    const ps = preset.series[i]
+  preset.series.forEach((ps, i) => {
     const fieldDef = fields.find((f) => f.key === ps.fieldKey)
-    if (!fieldDef) continue
+    if (!fieldDef) return
     series.push({
       id: uid(),
       fieldKey: ps.fieldKey,
       label: fieldDef.label,
       chartType: ps.chartType,
       yAxisId: ps.yAxisId ?? 'left',
-      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length]!,
     })
-  }
+  })
   return { xAxisField: preset.xAxisField, series }
 }
 
@@ -72,17 +68,17 @@ function autoSelect(
   def?: DatasetDef,
 ): { xAxisField: string; series: Array<SeriesConfig>; activePreset: string | null } {
   // If preset available, use the first one
-  if (def?.presets?.length) {
-    const preset = def.presets[0]
-    const { xAxisField, series } = buildSeriesFromPreset(preset, fields)
-    return { xAxisField, series, activePreset: preset.name }
+  const firstPreset = def?.presets?.[0]
+  if (firstPreset) {
+    const { xAxisField, series } = buildSeriesFromPreset(firstPreset, fields)
+    return { xAxisField, series, activePreset: firstPreset.name }
   }
 
   // Smart defaults based on field types
   const xField =
     fields.find((f) => f.type === 'date') ??
     fields.find((f) => f.type === 'category') ??
-    fields[0]
+    fields[0]!
   const firstNumeric = fields.find(
     (f) => f.type === 'number' && f.key !== xField.key,
   )
@@ -93,9 +89,9 @@ function autoSelect(
           id: uid(),
           fieldKey: firstNumeric.key,
           label: firstNumeric.label,
-          chartType: smartChartType(firstNumeric, xField),
+          chartType: smartChartType(xField),
           yAxisId: 'left',
-          color: CATEGORY_COLORS[0],
+          color: CATEGORY_COLORS[0]!,
         },
       ]
     : []
@@ -127,7 +123,6 @@ function reducer(
     case 'SET_X_AXIS':
       return { ...state, xAxisField: action.field, activePreset: null }
     case 'ADD_SERIES': {
-      const xField = undefined // We don't need it for the add case
       return {
         ...state,
         activePreset: null,
@@ -137,7 +132,7 @@ function reducer(
             id: uid(),
             fieldKey: action.field.key,
             label: action.field.label,
-            chartType: smartChartType(action.field, xField),
+            chartType: smartChartType(undefined),
             yAxisId: 'left',
             color: pickColor(state.series),
           },

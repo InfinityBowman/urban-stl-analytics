@@ -67,7 +67,7 @@ export function AnalyticsPanel() {
   // Default to first tab
   useEffect(() => {
     if (tabs.length > 0 && !activeTab) {
-      setActiveTab(tabs[0].key)
+      setActiveTab(tabs[0]!.key)
     }
   }, [tabs, activeTab])
 

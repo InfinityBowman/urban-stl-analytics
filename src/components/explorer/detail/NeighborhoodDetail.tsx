@@ -26,7 +26,7 @@ export function NeighborhoodDetail({ id }: { id: string }) {
     const routeIds = new Set<string>()
     for (const stop of metrics.nearbyStops) {
       const stats = stopStats[stop.properties.stop_id as string]
-      stats.routes.forEach((r) => routeIds.add(r))
+      stats?.routes.forEach((r) => routeIds.add(r))
     }
     return routes.filter((r) => routeIds.has(r.route_id))
   }, [routes, stopStats, metrics])

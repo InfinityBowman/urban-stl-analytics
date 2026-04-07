@@ -43,7 +43,7 @@ export function FoodAccessLayer() {
     <>
       {/* Food desert tracts */}
       {showDesertTracts && desertGeo && (
-        <Source id="food-deserts" type="geojson" data={desertGeo}>
+        <Source id="food-deserts" type="geojson" data={desertGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="desert-fill"
             type="fill"
@@ -76,7 +76,7 @@ export function FoodAccessLayer() {
 
       {/* Grocery stores */}
       {showGroceryStores && groceryPointsGeo && (
-        <Source id="grocery-stores" type="geojson" data={groceryPointsGeo}>
+        <Source id="grocery-stores" type="geojson" data={groceryPointsGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="grocery-circles"
             type="circle"

@@ -65,7 +65,7 @@ export function CategoryBarChart({
             fontSize: 12,
             color: 'var(--color-foreground)',
           }}
-          formatter={(v: number) => [v.toLocaleString(), valueLabel]}
+          formatter={(v: number | undefined) => [(v ?? 0).toLocaleString(), valueLabel]}
         />
         <Bar dataKey="value" name={valueLabel} radius={[4, 4, 4, 4]}>
           {data.map((_, i) => (

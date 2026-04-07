@@ -90,7 +90,7 @@ export function ExplorerMap() {
           })
           .filter(Boolean)
         if (hoodFeatures.length > 0) {
-          const nhdNum = hoodFeatures[0].properties?.NHD_NUM
+          const nhdNum = hoodFeatures[0]!.properties?.NHD_NUM
           if (nhdNum != null) {
             const hoodId = String(nhdNum).padStart(2, '0')
             // If A is empty, set A; else if B is empty, set B; else replace A
@@ -113,7 +113,7 @@ export function ExplorerMap() {
         ? map.queryRenderedFeatures(point, { layers: ['vacancy-circles'] })
         : []
       if (vacancyFeatures.length > 0) {
-        const id = vacancyFeatures[0].properties?.id
+        const id = vacancyFeatures[0]!.properties?.id
         if (id != null) {
           explorer.selectEntity({ type: 'vacancy', id: Number(id) })
           return
@@ -125,7 +125,7 @@ export function ExplorerMap() {
         ? map.queryRenderedFeatures(point, { layers: ['stops-circles'] })
         : []
       if (stopFeatures.length > 0) {
-        const id = stopFeatures[0].properties?.stop_id
+        const id = stopFeatures[0]!.properties?.stop_id
         if (id) {
           explorer.selectEntity({ type: 'stop', id: String(id) })
           return
@@ -137,7 +137,7 @@ export function ExplorerMap() {
         ? map.queryRenderedFeatures(point, { layers: ['grocery-circles'] })
         : []
       if (groceryFeatures.length > 0) {
-        const idx = groceryFeatures[0].properties?.idx
+        const idx = groceryFeatures[0]!.properties?.idx
         if (idx != null) {
           explorer.selectEntity({ type: 'grocery', id: Number(idx) })
           return
@@ -149,7 +149,7 @@ export function ExplorerMap() {
         ? map.queryRenderedFeatures(point, { layers: ['desert-fill'] })
         : []
       if (desertFeatures.length > 0) {
-        const tractId = desertFeatures[0].properties?.tract_id
+        const tractId = desertFeatures[0]!.properties?.tract_id
         if (tractId) {
           explorer.selectEntity({ type: 'foodDesert', id: String(tractId) })
           return
@@ -161,7 +161,7 @@ export function ExplorerMap() {
         ? map.queryRenderedFeatures(point, { layers: ['neighborhood-base-fill'] })
         : []
       if (hoodFeatures.length > 0) {
-        const nhdNum = hoodFeatures[0].properties?.NHD_NUM
+        const nhdNum = hoodFeatures[0]!.properties?.NHD_NUM
         if (nhdNum != null) {
           explorer.selectEntity({
             type: 'neighborhood',

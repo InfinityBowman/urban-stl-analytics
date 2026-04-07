@@ -607,8 +607,8 @@ function VacancyFilters() {
             vacancyFilters.vacancyMaxScore,
           ]}
           onValueChange={(values) => {
-            setSubToggle('vacancyMinScore', values[0])
-            setSubToggle('vacancyMaxScore', values[1])
+            setSubToggle('vacancyMinScore', values[0]!)
+            setSubToggle('vacancyMaxScore', values[1]!)
           }}
         />
       </div>

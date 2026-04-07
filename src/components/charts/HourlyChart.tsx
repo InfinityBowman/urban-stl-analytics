@@ -48,7 +48,7 @@ export function HourlyChart({ data, height = 300, valueLabel = 'Incidents' }: Ho
             fontSize: 12,
             color: 'var(--color-foreground)',
           }}
-          formatter={(v: number) => [v.toLocaleString(), valueLabel]}
+          formatter={(v: number | undefined) => [(v ?? 0).toLocaleString(), valueLabel]}
         />
         <Bar dataKey="value" name={valueLabel} radius={[4, 4, 0, 0]}>
           {chartData.map((d, i) => {

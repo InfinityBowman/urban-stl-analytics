@@ -51,7 +51,7 @@ export function HousingLayer() {
   return (
     <>
       {choroplethGeo && (
-        <Source id="housing-choropleth" type="geojson" data={choroplethGeo}>
+        <Source id="housing-choropleth" type="geojson" data={choroplethGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="housing-choropleth-fill"
             type="fill"

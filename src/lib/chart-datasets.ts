@@ -75,7 +75,7 @@ export const DATASET_REGISTRY: Array<DatasetDef> = [
       const ma7: Array<number | null> = values.map((_, i) => {
         if (i < 6) return null
         let sum = 0
-        for (let j = i - 6; j <= i; j++) sum += values[j]
+        for (let j = i - 6; j <= i; j++) sum += values[j]!
         return Math.round((sum / 7) * 10) / 10
       })
 
@@ -358,7 +358,7 @@ export const DATASET_REGISTRY: Array<DatasetDef> = [
       const ma7: Array<number | null> = values.map((_, i) => {
         if (i < 6) return null
         let sum = 0
-        for (let j = i - 6; j <= i; j++) sum += values[j]
+        for (let j = i - 6; j <= i; j++) sum += values[j]!
         return Math.round((sum / 7) * 10) / 10
       })
       return entries.map(([date, count], i) => ({
@@ -546,8 +546,8 @@ export const DATASET_REGISTRY: Array<DatasetDef> = [
       if (!data.demographicsData) return null
       return Object.entries(data.demographicsData).map(([, d]) => ({
         neighborhood: d.name,
-        pop2020: d.population['2020'] ?? 0,
-        pop2010: d.population['2010'] ?? 0,
+        pop2020: d.population['2020'],
+        pop2010: d.population['2010'],
         popChange: d.popChange10to20,
         vacancyRate: d.housing.vacancyRate,
       }))

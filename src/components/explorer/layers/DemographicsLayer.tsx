@@ -22,7 +22,7 @@ export function DemographicsLayer() {
       if (demo) {
         switch (metric) {
           case 'population':
-            value = demo.population['2020'] ?? 0
+            value = demo.population['2020']
             break
           case 'vacancyRate':
             value = demo.housing.vacancyRate
@@ -60,7 +60,7 @@ export function DemographicsLayer() {
   return (
     <>
       {choroplethGeo && (
-        <Source id="demographics-choropleth" type="geojson" data={choroplethGeo}>
+        <Source id="demographics-choropleth" type="geojson" data={choroplethGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="demographics-choropleth-fill"
             type="fill"

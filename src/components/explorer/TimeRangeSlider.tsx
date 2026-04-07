@@ -51,15 +51,15 @@ export function TimeRangeSlider() {
   }, [years, setSubToggle, showComplaints, showCrime])
 
   const selectedYear = useMemo(() => {
-    if (!timeRangeStart) return years[years.length - 1]
+    if (!timeRangeStart) return years[years.length - 1] ?? 0
     return Number(timeRangeStart.slice(0, 4))
   }, [timeRangeStart, years])
 
   const handleYearChange = useCallback(
     (values: Array<number>) => {
       if (years.length === 0) return
-      const idx = clamp(values[0], 0, years.length - 1)
-      const year = years[idx]
+      const idx = clamp(values[0]!, 0, years.length - 1)
+      const year = years[idx]!
       setSubToggle('timeRangeStart', `${year}-01-01`)
       setSubToggle('timeRangeEnd', `${year}-12-31`)
     },

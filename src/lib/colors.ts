@@ -18,7 +18,7 @@ export function dynamicBreaks(values: Array<number>, steps = CHORO_COLORS.length
   const unique = [...new Set(raw)].sort((a, b) => a - b)
   // Pad back to the expected length with ascending values beyond max
   while (unique.length < steps) {
-    unique.push(unique[unique.length - 1] + 1)
+    unique.push(unique[unique.length - 1]! + 1)
   }
   return unique
 }
@@ -80,7 +80,7 @@ export function percentileBreaks(scores: Array<number>, buckets = 5): Array<numb
   const sorted = [...scores].sort((a, b) => a - b)
   return Array.from({ length: buckets }, (_, i) => {
     const idx = Math.min(Math.floor((i / buckets) * sorted.length), sorted.length - 1)
-    return sorted[idx]
+    return sorted[idx]!
   })
 }
 

@@ -19,10 +19,7 @@ import { Switch } from '@/components/ui/switch'
 
 type IconType = typeof Building03Icon
 
-const ENTITY_CONFIG: Record<
-  string,
-  { label: string; color: string; icon: IconType }
-> = {
+const ENTITY_CONFIG = {
   neighborhood: { label: 'Neighborhood', color: '#6366f1', icon: Group01Icon },
   vacancy: {
     label: 'Vacant Property',
@@ -36,7 +33,7 @@ const ENTITY_CONFIG: Record<
     color: '#ef4444',
     icon: AlertDiamondIcon,
   },
-}
+} satisfies Record<string, { label: string; color: string; icon: IconType }>
 
 export function DetailPanel() {
   const selected = useExplorerStore((s) => s.selected)

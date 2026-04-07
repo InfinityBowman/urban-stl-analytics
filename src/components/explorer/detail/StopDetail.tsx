@@ -23,13 +23,13 @@ export function StopDetail({ id }: { id: string }) {
     return <div className="text-xs text-muted-foreground">Stop not found</div>
   }
 
-  const [lon, lat] = stop.geometry.coordinates as Array<number>
+  const [lon, lat] = stop.geometry.coordinates as [number, number]
 
   return (
     <div className="flex flex-col gap-3 text-xs">
       {/* Stop name */}
       <div className="text-base font-bold">
-        {stop.properties.stop_name || `Stop ${id}`}
+        {(stop.properties.stop_name as string) || `Stop ${id}`}
       </div>
 
       {/* Key metrics */}

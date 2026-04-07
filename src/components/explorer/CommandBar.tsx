@@ -148,7 +148,7 @@ export function CommandBar() {
   // Pick a random thinking word each time streaming starts
   useEffect(() => {
     if (isStreaming) {
-      setThinkingWord(THINKING_WORDS[Math.floor(Math.random() * THINKING_WORDS.length)])
+      setThinkingWord(THINKING_WORDS[Math.floor(Math.random() * THINKING_WORDS.length)]!)
     }
   }, [isStreaming])
 
@@ -215,6 +215,7 @@ export function CommandBar() {
           toggledLayers,
           chartDispatch,
         })
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (cancelled) return
         results.push(result)
       }

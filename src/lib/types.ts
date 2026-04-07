@@ -189,8 +189,14 @@ export interface ArpaData {
 
 export interface NeighborhoodDemographics {
   name: string
-  population: Record<string, number> // year → count
-  race: Record<string, number>
+  population: { '2010': number; '2020': number }
+  race: {
+    white: number
+    black: number
+    hispanic: number
+    asian: number
+    other: number
+  }
   housing: {
     totalUnits: number
     occupied: number

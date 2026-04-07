@@ -6,7 +6,7 @@ interface PopulationKpiGridProps {
 
 export function PopulationKpiGrid({ demographics }: PopulationKpiGridProps) {
   const hoods = Object.values(demographics)
-  const totalPop = hoods.reduce((s, h) => s + (h.population['2020'] ?? 0), 0)
+  const totalPop = hoods.reduce((s, h) => s + h.population['2020'], 0)
   const totalUnits = hoods.reduce((s, h) => s + h.housing.totalUnits, 0)
   const totalVacant = hoods.reduce((s, h) => s + h.housing.vacant, 0)
   const avgVacancy = totalUnits > 0 ? ((totalVacant / totalUnits) * 100).toFixed(1) : '0'

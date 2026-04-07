@@ -1,4 +1,4 @@
-import type { CSBData, NeighborhoodStats, TrendsData, VacantProperty } from './types'
+import type { CSBData, TrendsData, VacantProperty } from './types'
 import type { SubToggles } from './explorer-types'
 
 /** Detect volume hotspots (neighborhoods with >2x avg complaints) */
@@ -56,18 +56,20 @@ export function weatherInsights(
   dates.forEach((date, i) => {
     const w = weather[date]
     if (!w) return
+    const count = daily[date]!
 
-    if (w.precip > 0.1) rainy.push(daily[date])
-    else dry.push(daily[date])
+    if (w.precip > 0.1) rainy.push(count)
+    else dry.push(count)
 
     if (i < dates.length - 1) {
-      const next = dates[i + 1]
-      if (w.precip > 0.5) afterHeavy.push(daily[next])
-      else afterNormal.push(daily[next])
+      const next = dates[i + 1]!
+      const nextCount = daily[next]!
+      if (w.precip > 0.5) afterHeavy.push(nextCount)
+      else afterNormal.push(nextCount)
     }
 
-    if (w.high > 90) hot.push(daily[date])
-    else if (w.high < 70) cool.push(daily[date])
+    if (w.high > 90) hot.push(count)
+    else if (w.high < 70) cool.push(count)
   })
 
   const avg = (arr: Array<number>) =>
@@ -120,7 +122,7 @@ export function getHoodComplaintCount(
   const hood = data.neighborhoods[key]
   if (!hood) return 0
   if (category === 'all') return hood.total
-  return hood.topCategories?.[category] ?? 0
+  return hood.topCategories[category] ?? 0
 }
 
 /** Filter vacancy data by sub-toggle state */
@@ -151,7 +153,7 @@ export function filterVacancies(
 
 /** Build heatmap GeoJSON from point tuples [lat, lon, ...] */
 export function buildHeatmapGeo(
-  points: Array<Array<number | string>>,
+  points: Array<[number, number, string, string?, string?]>,
 ): GeoJSON.FeatureCollection | null {
   if (points.length === 0) return null
   return {
@@ -159,7 +161,7 @@ export function buildHeatmapGeo(
     features: points.map((p) => ({
       type: 'Feature' as const,
       properties: { weight: 0.6 },
-      geometry: { type: 'Point' as const, coordinates: [p[1] as number, p[0] as number] },
+      geometry: { type: 'Point' as const, coordinates: [p[1], p[0]] },
     })),
   }
 }

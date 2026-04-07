@@ -98,7 +98,7 @@ export function ComplaintsLayer() {
   return (
     <>
       {mode === 'choropleth' && choroplethGeo && (
-        <Source id="complaints-choropleth" type="geojson" data={choroplethGeo}>
+        <Source id="complaints-choropleth" type="geojson" data={choroplethGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="complaints-choropleth-fill"
             type="fill"

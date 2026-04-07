@@ -56,7 +56,7 @@ export function TransitLayer() {
     <>
       {/* Walkshed */}
       {walkshedOn && walkshedGeo && (
-        <Source id="walkshed" type="geojson" data={walkshedGeo}>
+        <Source id="walkshed" type="geojson" data={walkshedGeo as GeoJSON.FeatureCollection}>
           <Layer
             id="walkshed-circles"
             type="circle"
@@ -84,7 +84,7 @@ export function TransitLayer() {
 
       {/* Routes */}
       {routesOn && shapes && (
-        <Source id="transit-routes" type="geojson" data={shapes}>
+        <Source id="transit-routes" type="geojson" data={shapes as unknown as GeoJSON.FeatureCollection}>
           <Layer
             id="route-lines"
             type="line"
@@ -99,7 +99,7 @@ export function TransitLayer() {
 
       {/* Stops */}
       {stopsOn && stopsWithStats && (
-        <Source id="transit-stops" type="geojson" data={stopsWithStats}>
+        <Source id="transit-stops" type="geojson" data={stopsWithStats as GeoJSON.FeatureCollection}>
           <Layer
             id="stops-circles"
             type="circle"

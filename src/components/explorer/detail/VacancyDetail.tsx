@@ -17,7 +17,7 @@ const conditionLabels: Record<number, string> = {
   5: 'Excellent',
 }
 
-const ownerLabels: Record<string, string> = {
+const ownerLabels: Record<'LRA' | 'CITY' | 'PRIVATE', string> = {
   LRA: 'Land Reutilization Authority',
   CITY: 'City of St. Louis',
   PRIVATE: 'Private Owner',

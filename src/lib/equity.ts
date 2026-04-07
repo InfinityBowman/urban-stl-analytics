@@ -2,7 +2,6 @@ import type {
   EquityGapResult,
   FoodDesertProperties,
   GeoJSONCollection,
-  GeoJSONFeature,
   StopStats,
 } from './types'
 
@@ -28,13 +27,13 @@ export function haversine(
 
 /** Centroid of a GeoJSON polygon */
 export function polygonCentroid(coords: Array<Array<Array<number>>>): [number, number] {
-  const pts = coords[0]
+  const pts = coords[0]!
   let latSum = 0
   let lonSum = 0
-  pts.forEach((p) => {
-    lonSum += p[0]
-    latSum += p[1]
-  })
+  for (const p of pts) {
+    lonSum += p[0]!
+    latSum += p[1]!
+  }
   return [latSum / pts.length, lonSum / pts.length]
 }
 
@@ -58,7 +57,7 @@ export function computeEquityGaps(
     let nearestStopDist = Infinity
 
     stops.features.forEach((stop) => {
-      const [lon, lat] = stop.geometry.coordinates as Array<number>
+      const [lon, lat] = stop.geometry.coordinates as [number, number]
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (dist <= WALK_RADIUS_MILES) {
         stopsNearby++
@@ -71,7 +70,7 @@ export function computeEquityGaps(
     let nearestGroceryDist = Infinity
     let nearestGroceryName = ''
     groceryStores.features.forEach((store) => {
-      const [lon, lat] = store.geometry.coordinates as Array<number>
+      const [lon, lat] = store.geometry.coordinates as [number, number]
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (dist < nearestGroceryDist) {
         nearestGroceryDist = dist
@@ -85,14 +84,14 @@ export function computeEquityGaps(
 
     // Pre-compute tract-nearby stops to avoid re-scanning in inner loop
     const tractNearbyStops = stops.features.filter((s) => {
-      const [lon, lat] = s.geometry.coordinates as Array<number>
+      const [lon, lat] = s.geometry.coordinates as [number, number]
       return haversine(centroid[0], centroid[1], lat, lon) <= WALK_RADIUS_MILES
     })
 
     for (const store of groceryStores.features) {
-      const [sLon, sLat] = store.geometry.coordinates as Array<number>
+      const [sLon, sLat] = store.geometry.coordinates as [number, number]
       for (const stop of stops.features) {
-        const [bLon, bLat] = stop.geometry.coordinates as Array<number>
+        const [bLon, bLat] = stop.geometry.coordinates as [number, number]
         const distStopToGrocery = haversine(sLat, sLon, bLat, bLon)
         if (distStopToGrocery > 0.25) continue
         const distStopToTract = haversine(centroid[0], centroid[1], bLat, bLon)
@@ -100,7 +99,7 @@ export function computeEquityGaps(
         if (!stats?.routes.length) continue
 
         for (const tractStop of tractNearbyStops) {
-          const [tLon, tLat] = tractStop.geometry.coordinates as Array<number>
+          const [tLon, tLat] = tractStop.geometry.coordinates as [number, number]
           const distToTract = haversine(centroid[0], centroid[1], tLat, tLon)
           const tractStopStats =
             stopStats[tractStop.properties.stop_id as string]

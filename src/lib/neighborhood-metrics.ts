@@ -37,9 +37,9 @@ export function computeNeighborhoodMetrics(
   if (hoodFeature.geometry.type === 'MultiPolygon') {
     ring = (
       hoodFeature.geometry.coordinates as Array<Array<Array<Array<number>>>>
-    )[0][0]
+    )[0]![0]!
   } else {
-    ring = (hoodFeature.geometry.coordinates as Array<Array<Array<number>>>)[0]
+    ring = (hoodFeature.geometry.coordinates as Array<Array<Array<number>>>)[0]!
   }
   const centroid: [number, number] = polygonCentroid([ring])
 
@@ -49,7 +49,7 @@ export function computeNeighborhoodMetrics(
 
   const nearbyStops =
     data.stops?.features.filter((stop) => {
-      const [lon, lat] = stop.geometry.coordinates as Array<number>
+      const [lon, lat] = stop.geometry.coordinates as [number, number]
       return haversine(centroid[0], centroid[1], lat, lon) <= 0.5
     }) ?? []
 
@@ -62,7 +62,7 @@ export function computeNeighborhoodMetrics(
   let nearestGroceryName = 'N/A'
   if (data.groceryStores) {
     for (const store of data.groceryStores.features) {
-      const [lon, lat] = store.geometry.coordinates as Array<number>
+      const [lon, lat] = store.geometry.coordinates as [number, number]
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (dist < nearestGroceryDist) {
         nearestGroceryDist = dist

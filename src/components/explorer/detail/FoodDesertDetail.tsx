@@ -36,7 +36,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
     let count = 0
     let frequency = 0
     stops.features.forEach((stop) => {
-      const [lon, lat] = stop.geometry.coordinates as Array<number>
+      const [lon, lat] = stop.geometry.coordinates as [number, number]
       if (haversine(centroid[0], centroid[1], lat, lon) <= 0.5) {
         count++
         const stats = stopStats?.[stop.properties.stop_id as string]
@@ -51,7 +51,7 @@ export function FoodDesertDetail({ id }: { id: string }) {
     if (!groceryStores || !centroid) return null
     let nearest: { name: string; dist: number } | null = null
     for (const store of groceryStores.features) {
-      const [lon, lat] = store.geometry.coordinates as Array<number>
+      const [lon, lat] = store.geometry.coordinates as [number, number]
       const dist = haversine(centroid[0], centroid[1], lat, lon)
       if (!nearest || dist < nearest.dist) {
         nearest = { name: store.properties.name, dist }
@@ -64,14 +64,14 @@ export function FoodDesertDetail({ id }: { id: string }) {
   const groceryAccessible = useMemo(() => {
     if (!stops || !stopStats || !groceryStores || !centroid) return false
     for (const store of groceryStores.features) {
-      const [sLon, sLat] = store.geometry.coordinates as Array<number>
+      const [sLon, sLat] = store.geometry.coordinates as [number, number]
       for (const stop of stops.features) {
-        const [bLon, bLat] = stop.geometry.coordinates as Array<number>
+        const [bLon, bLat] = stop.geometry.coordinates as [number, number]
         if (haversine(sLat, sLon, bLat, bLon) > 0.25) continue
         const stats = stopStats[stop.properties.stop_id as string]
         if (!stats?.routes.length) continue
         for (const tractStop of stops.features) {
-          const [tLon, tLat] = tractStop.geometry.coordinates as Array<number>
+          const [tLon, tLat] = tractStop.geometry.coordinates as [number, number]
           if (haversine(centroid[0], centroid[1], tLat, tLon) > 0.5) continue
           const tractStats = stopStats[tractStop.properties.stop_id as string]
           if (tractStats?.routes.some((r) => stats.routes.includes(r)))

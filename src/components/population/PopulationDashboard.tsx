@@ -28,7 +28,7 @@ export function PopulationDashboard() {
   const topByPop = useMemo(() => {
     if (!demographics) return []
     return Object.entries(demographics)
-      .map(([, d]) => ({ name: d.name, value: d.population['2020'] ?? 0 }))
+      .map(([, d]) => ({ name: d.name, value: d.population['2020'] }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10)
   }, [demographics])

@@ -82,7 +82,7 @@ export async function executeDataTool(
       await ensureLoaded('base', ...(layer ? [layer] : []))
       content = buildRankings(
         metric,
-        (args.order as string) ?? 'desc',
+        (args.order as string | undefined) ?? 'desc',
         Math.min(Number(args.limit) || 10, 20),
         getDataSnapshot(),
       )
@@ -211,7 +211,7 @@ function buildCitySummary(data: ExplorerData) {
 
   if (data.demographicsData && Object.keys(data.demographicsData).length > 0) {
     const demoValues = Object.values(data.demographicsData)
-    const totalPop = demoValues.reduce((s, d) => s + (d.population['2020'] ?? 0), 0)
+    const totalPop = demoValues.reduce((s, d) => s + d.population['2020'], 0)
     const avgVacancy =
       Math.round(
         (demoValues.reduce((s, d) => s + d.housing.vacancyRate, 0) / demoValues.length) * 10,
@@ -294,10 +294,10 @@ function buildNeighborhoodDetail(name: string, data: ExplorerData) {
   }
 
   // Add demographics if available
-  if (data.demographicsData?.[hoodKey]) {
-    const demo = data.demographicsData[hoodKey]
+  const demo = data.demographicsData?.[hoodKey]
+  if (demo) {
     result.demographics = {
-      population2020: demo.population['2020'] ?? null,
+      population2020: demo.population['2020'],
       popChange10to20: demo.popChange10to20,
       housing: demo.housing,
       race: demo.race,
@@ -382,7 +382,7 @@ function buildRankings(
         entries.push({
           name: demo.name,
           nhdNum: id,
-          value: demo.population['2020'] ?? 0,
+          value: demo.population['2020'],
         })
       }
       break

@@ -16,8 +16,8 @@ export function PopulationChangeTable({ demographics }: PopulationChangeTablePro
     const entries = Object.entries(demographics).map(([id, d]) => ({
       id,
       name: d.name,
-      pop2020: d.population['2020'] ?? 0,
-      pop2010: d.population['2010'] ?? 0,
+      pop2020: d.population['2020'],
+      pop2010: d.population['2010'],
       change: d.popChange10to20,
     }))
 
@@ -48,7 +48,7 @@ export function PopulationChangeTable({ demographics }: PopulationChangeTablePro
     sortKey === key ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : ''
 
   return (
-    <div className="max-h-[500px] overflow-auto rounded-lg border border-border">
+    <div className="max-h-125 overflow-auto rounded-lg border border-border">
       <table className="w-full text-xs">
         <thead className="sticky top-0 bg-muted text-muted-foreground">
           <tr>
