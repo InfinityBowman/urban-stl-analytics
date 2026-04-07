@@ -2,13 +2,13 @@ import { resolveNeighborhood } from './neighborhood-resolver'
 import type { ToolCall } from './use-chat'
 import type { ChartBuilderAction } from '@/components/explorer/analytics/chart-builder/useChartBuilder'
 import type {
-  ExplorerData,
   ExplorerState,
   LayerToggles,
   SubToggles,
 } from '@/lib/explorer-types'
 import { getDataset, getDatasetFields } from '@/lib/chart-datasets'
 import { useExplorerStore } from '@/stores/explorer-store'
+import { ensureLoaded, getDataSnapshot } from '@/stores/data-store'
 
 interface ExecutorContext {
   /**
@@ -24,7 +24,6 @@ interface ExecutorContext {
    */
   toggledLayers: Set<string>
   chartDispatch: React.Dispatch<ChartBuilderAction>
-  data: ExplorerData
 }
 
 export interface ActionResult {
@@ -78,13 +77,16 @@ function toggleLayerOnce(ctx: ExecutorContext, layer: keyof LayerToggles) {
   useExplorerStore.getState().toggleLayer(layer)
 }
 
-export function executeToolCall(
+export async function executeToolCall(
   toolCall: ToolCall,
   ctx: ExecutorContext,
-): ActionResult {
-  const { state, chartDispatch, data } = ctx
+): Promise<ActionResult> {
+  const { state, chartDispatch } = ctx
   const store = useExplorerStore.getState()
   const args = toolCall.arguments
+  // Most cases only need the data snapshot at all if they read it; we
+  // refresh it after any awaits below.
+  let data = getDataSnapshot()
 
   switch (toolCall.name) {
     case 'set_layers': {
@@ -106,6 +108,19 @@ export function executeToolCall(
     }
 
     case 'set_filters': {
+      // The fuzzy match below reads category lists out of the data store.
+      // Pre-load whichever datasets the args mention so the match has real
+      // candidates instead of falling through to "no match".
+      const layersToLoad: Array<keyof LayerToggles> = []
+      if ('crimeCategory' in args) layersToLoad.push('crime')
+      if ('complaintsCategory' in args) layersToLoad.push('complaints')
+      if ('arpaCategory' in args) layersToLoad.push('arpa')
+      if ('vacancyHoodFilter' in args) layersToLoad.push('vacancy')
+      if (layersToLoad.length > 0) {
+        await ensureLoaded(...layersToLoad)
+        data = getDataSnapshot()
+      }
+
       const descriptions: Array<string> = []
 
       // Helper: resolve a category filter with fuzzy matching
@@ -323,7 +338,10 @@ export function executeToolCall(
 
     case 'select_neighborhood': {
       const name = args.name as string
-      if (!name || !data.neighborhoods) {
+      if (!name) return { description: 'Could not find neighborhood' }
+      await ensureLoaded('base')
+      data = getDataSnapshot()
+      if (!data.neighborhoods) {
         return { description: 'Could not find neighborhood' }
       }
       const resolved = resolveNeighborhood(name, data.neighborhoods)
@@ -373,11 +391,16 @@ export function executeToolCall(
         return { description: `Unknown dataset: ${datasetKey}` }
       }
 
-      // Ensure required layers are on
+      // Ensure required layers are on AND their data is loaded - the chart
+      // builder needs the actual rows to derive fields and render.
       for (const layer of def.requiredLayers) {
         if (!state.layers[layer]) {
           toggleLayerOnce(ctx, layer)
         }
+      }
+      if (def.requiredLayers.length > 0) {
+        await ensureLoaded(...def.requiredLayers)
+        data = getDataSnapshot()
       }
 
       // Open analytics if closed
@@ -432,6 +455,12 @@ export function executeToolCall(
       if (!state.compareMode) {
         store.toggleCompareMode()
         descriptions.push('Entered compare mode')
+      }
+
+      // Need base data to resolve neighborhood names.
+      if (args.neighborhoodA || args.neighborhoodB) {
+        await ensureLoaded('base')
+        data = getDataSnapshot()
       }
 
       // Resolve neighborhoods A and B

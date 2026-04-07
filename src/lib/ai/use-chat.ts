@@ -17,7 +17,7 @@ export interface ToolCall {
 /** Callback that resolves data tool calls against ExplorerData on the client */
 export type DataToolResolver = (
   toolCalls: Array<ToolCall>,
-) => Array<{ toolCallId: string; name: string; content: string }>
+) => Promise<Array<{ toolCallId: string; name: string; content: string }>>
 
 interface StreamOneTurnResult {
   text: string
@@ -222,7 +222,7 @@ export function useChat() {
 
           // Resolve data tools client-side
           allDataToolNames.push(...dataTools.map((tc) => tc.name))
-          const dataResults = resolveDataTools(dataTools)
+          const dataResults = await resolveDataTools(dataTools)
 
           // Build assistant message with tool_calls for the conversation
           const assistantToolCallsMsg: WireMessage = {

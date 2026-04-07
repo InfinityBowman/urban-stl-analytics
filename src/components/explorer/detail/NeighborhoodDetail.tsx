@@ -1,10 +1,16 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { DetailRow, DetailSection } from './shared'
 import { useNeighborhoodMetrics } from './useNeighborhoodMetrics'
 import { useDataStore } from '@/stores/data-store'
 import { haversine, polygonCentroid } from '@/lib/equity'
 
 export function NeighborhoodDetail({ id }: { id: string }) {
+  // useNeighborhoodMetrics already triggers complaints/vacancy/transit loads.
+  // Trigger foodAccess too since we use it for the isDesert check below.
+  useEffect(() => {
+    useDataStore.getState().loadLayer('foodAccess')
+  }, [])
+
   const csbData = useDataStore((s) => s.csbData)
   const routes = useDataStore((s) => s.routes)
   const stopStats = useDataStore((s) => s.stopStats)

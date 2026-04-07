@@ -1,10 +1,14 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
 import { DEMO_COLORS, dynamicBreaks } from '@/lib/colors'
 
 export function DemographicsLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('demographics')
+  }, [])
+
   const neighborhoods = useDataStore((s) => s.neighborhoods)
   const demographicsData = useDataStore((s) => s.demographicsData)
   const metric = useExplorerStore((s) => s.subToggles.demographicsMetric)

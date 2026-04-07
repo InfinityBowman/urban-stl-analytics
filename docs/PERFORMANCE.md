@@ -467,31 +467,51 @@ verification:
 
 ## Bundle size
 
-Heavy deps in the main bundle:
+Already solved by TanStack Router's auto-splitting (`?tsr-split=component`).
+Verified against the build manifest:
 
-- `mapbox-gl` (~800 KB gzip)
-- `recharts` (~150 KB gzip)
-- `motion` (~50 KB gzip)
+- Landing (`_bare/index.tsx`): framework + router + landing chunk only.
+  No mapbox, no recharts.
+- About: same. No heavy deps.
+- Housing / Population: recharts (`CategoryBarChart`) but no mapbox.
+- Explore: recharts + mapbox-gl, and `mapbox-gl-*.js` is a `dynamicImport`
+  of the explore route, so it does not even load until the explore
+  component actually renders.
 
-The landing page (`/`) and `/about` do not need any of these. Use TanStack
-Router's `lazyRouteComponent` to split `_app/explore.tsx`,
-`_app/population.tsx`, and `_app/housing.tsx` into per-route chunks. Likely
-3-5x smaller initial JS for visitors who hit the landing page first.
+The 388 KB `main-*.js` is the framework baseline (React, TanStack Router,
+base-ui, radix). Shrinking it further would mean swapping libraries, which
+is a different conversation than perf.
 
-## Recommended order of work
+No code-splitting work needed.
 
-1. **Switch cursor detection to per-layer Mapbox events** (#2). Tiny diff,
-   restores 60 fps on the map. Independent of everything else.
-2. **Memoize `NeighborhoodBaseLayer` expressions** (#6). Trivial.
-3. **Delete `public/data/csb_2025.json`** if confirmed unused. Trivial.
-4. **Migrate to zustand** (#3). Biggest architectural change but unblocks
-   the rest. Resolves #3 directly and #7 incidentally.
-5. **Fix `useNeighborhoodMetrics` deps** (#1). Once zustand is in, this is
-   a one-line change to depend on stable slices instead of the `data`
-   object. No separate cache needed.
-6. **Move eager fetches out of `ExplorerProvider`** (#4). Free TTI win for
-   `/`, `/about`, `/population`, `/housing`.
-7. **Index heatmap points** (#5) and **freeze vacancy GeoJSON** (#8) once
-   the easier wins are in.
-8. **Per-route code splitting** (bundle section). Largest change, lowest
-   urgency.
+## Status (post-zustand migration)
+
+Done:
+
+- #1 metrics cache: unblocked. `useNeighborhoodMetrics` now memoizes on
+  stable per-slice deps and no longer invalidates on unrelated dataset
+  loads.
+- #2 cursor mousemove: switched to per-layer `mouseenter`/`mouseleave`.
+- #3 monolithic context cascade: replaced with zustand selectors.
+- #6 `NeighborhoodBaseLayer` inline expressions: memoized.
+- #7 `ChartBuilder.extract` re-runs: collapsed via `useShallow`.
+- #9 `AnalyticsPanel` drag listener leak: moved to a `useEffect` with
+  guaranteed cleanup.
+
+Still open, in priority order:
+
+1. **#4 Eager 17 MB data load on mount.** Biggest perf item left.
+   The eager `loadLayer()` calls in `ExplorerProvider` still run on every
+   visit to `/explore`. Two options:
+   - Move them into the `_app/explore.tsx` route loader so they only run
+     when explore is active.
+   - Make `data-executor` lazy: each tool calls `loadLayer()` and awaits
+     before reading. The explore page only fetches the datasets the user
+     enables; the AI fetches what it needs on demand.
+2. **Delete `public/data/csb_2025.json`** if confirmed unused. Trivial,
+   3.7 MB off the deploy.
+3. **#5 Heatmap point indexing.** Pre-bucket by year/category at load
+   time so the time slider becomes O(1) lookup instead of a full filter.
+4. **#8 VacancyLayer GeoJSON rebuild.** Build the feature collection once
+   and use Mapbox `filter` expressions for show/hide, or enable
+   `cluster: true` on the source.

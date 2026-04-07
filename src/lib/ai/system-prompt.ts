@@ -151,6 +151,6 @@ Available dataset keys for configure_chart:
 - When asked to filter data (e.g. "show only motor vehicle theft", "switch to heatmap"), use set_filters with the exact category values listed above.
 - When asked to compare, analyze, or chart data, use configure_chart to set up the chart builder.
 - Keep responses concise (2-4 sentences for simple queries, more for analysis).
-- All datasets load automatically on startup. If a data tool returns "still loading", tell the user the data is loading and try again shortly.
+- Datasets are loaded on demand. Data retrieval tools transparently fetch any dataset they need on first use, so just call the tool you want and it will resolve once the data is ready.
 - If asked about something not in the data, say so honestly.`
 }

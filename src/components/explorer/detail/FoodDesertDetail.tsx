@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { DetailRow, DetailSection, MetricCard } from './shared'
 import { useDataStore } from '@/stores/data-store'
 import { haversine, polygonCentroid } from '@/lib/equity'
@@ -6,6 +6,12 @@ import { equitySeverity } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 
 export function FoodDesertDetail({ id }: { id: string }) {
+  // foodAccess must be on for the user to click a desert tract, but the
+  // nearby-stops/transit-to-grocery analysis also needs transit data.
+  useEffect(() => {
+    useDataStore.getState().loadLayer('transit')
+  }, [])
+
   const foodDeserts = useDataStore((s) => s.foodDeserts)
   const stops = useDataStore((s) => s.stops)
   const stopStats = useDataStore((s) => s.stopStats)

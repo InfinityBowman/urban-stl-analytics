@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
@@ -6,6 +6,10 @@ import { VACANCY_COLORS, percentileBreaks } from '@/lib/colors'
 import { filterVacancies } from '@/lib/analysis'
 
 export function VacancyLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('vacancy')
+  }, [])
+
   const vacancyData = useDataStore((s) => s.vacancyData)
   const subToggles = useExplorerStore((s) => s.subToggles)
 

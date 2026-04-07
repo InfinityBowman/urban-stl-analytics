@@ -193,38 +193,44 @@ export function CommandBar() {
     }
   }, [messages, smoothedText, pendingTools])
 
-  // Execute tool calls as they arrive — only run ones we haven't executed yet
+  // Execute tool calls as they arrive — only run ones we haven't executed yet.
+  // executeToolCall is async because some tools (set_filters, configure_chart)
+  // need to await dataset loads before reading. We snapshot the state once per
+  // batch so layer-toggle dedupe works across tools, then run them sequentially.
   useEffect(() => {
     if (toolCalls.length === 0) return
     const newTools = toolCalls.filter((tc) => !executedToolIdsRef.current.has(tc.id))
     if (newTools.length === 0) return
 
-    // Snapshot current state/data once per batch. executeToolCall mutates the
-    // store via method calls, and we intentionally read the layer toggles at
-    // batch start so "enable if not on" logic doesn't double-toggle when
-    // multiple tools target the same layer.
+    let cancelled = false
     const stateSnapshot = useExplorerStore.getState()
-    const dataSnapshot = getDataSnapshot()
     const toggledLayers = new Set<string>()
 
-    const results: Array<ActionResult> = []
-    for (const tc of newTools) {
-      executedToolIdsRef.current.add(tc.id)
-      const result = executeToolCall(tc, {
-        state: stateSnapshot,
-        toggledLayers,
-        chartDispatch,
-        data: dataSnapshot,
-      })
-      results.push(result)
+    ;(async () => {
+      const results: Array<ActionResult> = []
+      for (const tc of newTools) {
+        executedToolIdsRef.current.add(tc.id)
+        const result = await executeToolCall(tc, {
+          state: stateSnapshot,
+          toggledLayers,
+          chartDispatch,
+        })
+        if (cancelled) return
+        results.push(result)
+      }
+      setActionResults((prev) => [...prev, ...results])
+    })()
+
+    return () => {
+      cancelled = true
     }
-    setActionResults((prev) => [...prev, ...results])
   }, [toolCalls, chartDispatch])
 
-  // Resolve data tool calls against current ExplorerData
+  // Resolve data tool calls. Each tool awaits its required dataset loads
+  // inside executeDataTool, so we run them in parallel here.
   const resolveDataTools = useCallback(
     (tools: Array<ToolCall>) =>
-      tools.map((tc) => executeDataTool(tc, getDataSnapshot())),
+      Promise.all(tools.map((tc) => executeDataTool(tc))),
     [],
   )
 

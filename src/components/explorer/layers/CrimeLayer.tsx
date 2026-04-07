@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
@@ -6,6 +6,10 @@ import { CRIME_COLORS, dynamicBreaks } from '@/lib/colors'
 import { buildHeatmapGeo } from '@/lib/analysis'
 
 export function CrimeLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('crime')
+  }, [])
+
   const neighborhoods = useDataStore((s) => s.neighborhoods)
   const crimeData = useDataStore((s) => s.crimeData)
 

@@ -1,9 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
 
 export function FoodAccessLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('foodAccess')
+  }, [])
+
   const foodDeserts = useDataStore((s) => s.foodDeserts)
   const groceryStores = useDataStore((s) => s.groceryStores)
 

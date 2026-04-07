@@ -6,13 +6,15 @@ import type { ExplorerData, LayerToggles } from '@/lib/explorer-types'
 
 interface DataStore extends ExplorerData {
   failedDatasets: Set<string>
-  loadBaseData: () => void
-  loadLayer: (layer: keyof LayerToggles) => void
+  loadBaseData: () => Promise<void>
+  loadLayer: (layer: keyof LayerToggles) => Promise<void>
 }
 
-// Module-private dedupe set. Not part of the store shape because consumers
-// never need to read it and we don't want it triggering re-renders.
-const fetched = new Set<string>()
+// Module-private dedupe map. The promise stays in the map after resolution
+// so subsequent calls return the already-fulfilled promise (no re-fetching).
+// Failed loads also resolve (not reject) - errors are surfaced via
+// failedDatasets in the store, not by throwing.
+const inFlight = new Map<string, Promise<void>>()
 
 const initialData: ExplorerData = {
   neighborhoods: null,
@@ -31,6 +33,12 @@ const initialData: ExplorerData = {
   housingData: null,
 }
 
+async function fetchJson(url: string) {
+  const r = await fetch(url)
+  if (!r.ok) throw new Error(`Failed to load ${url}`)
+  return r.json()
+}
+
 export const useDataStore = create<DataStore>()((set) => {
   const markFailed = (layer: string) =>
     set((s) => {
@@ -39,138 +47,104 @@ export const useDataStore = create<DataStore>()((set) => {
       return { failedDatasets: next }
     })
 
+  const loadBaseData = (): Promise<void> => {
+    const existing = inFlight.get('__base__')
+    if (existing) return existing
+    const p = (async () => {
+      try {
+        const [neighborhoods, routes, groceryStores] = await Promise.all([
+          fetchJson('/data/neighborhoods.geojson'),
+          fetchJson('/data/routes.json'),
+          fetchJson('/data/grocery_stores.geojson'),
+        ])
+        set({ neighborhoods, routes, groceryStores })
+      } catch (err) {
+        console.error('Failed to load base data:', err)
+        markFailed('__base__')
+      }
+    })()
+    inFlight.set('__base__', p)
+    return p
+  }
+
+  const loadLayer = (layer: keyof LayerToggles): Promise<void> => {
+    const existing = inFlight.get(layer)
+    if (existing) return existing
+
+    const p = (async () => {
+      try {
+        switch (layer) {
+          case 'complaints': {
+            const [csbData, trendsData] = await Promise.all([
+              fetchJson('/data/csb_latest.json'),
+              fetchJson('/data/trends.json'),
+            ])
+            set({ csbData, trendsData })
+            break
+          }
+
+          case 'transit': {
+            const [stops, shapes, stopStats] = await Promise.all([
+              fetchJson('/data/stops.geojson'),
+              fetch('/data/shapes.geojson')
+                .then((r) => r.json())
+                .catch(() => null),
+              fetchJson('/data/stop_stats.json'),
+            ])
+            set({ stops, shapes, stopStats })
+            break
+          }
+
+          case 'vacancy': {
+            const vacancyData = await fetchJson('/data/vacancies.json')
+            set({ vacancyData })
+            break
+          }
+
+          case 'foodAccess': {
+            const foodDeserts = await fetchJson('/data/food_deserts.geojson')
+            set({ foodDeserts })
+            break
+          }
+
+          case 'crime': {
+            const crimeData = await fetchJson('/data/crime.json')
+            set({ crimeData })
+            break
+          }
+
+          case 'arpa': {
+            const arpaData = await fetchJson('/data/arpa.json')
+            set({ arpaData })
+            break
+          }
+
+          case 'demographics': {
+            const demographicsData = await fetchJson('/data/demographics.json')
+            set({ demographicsData })
+            break
+          }
+
+          case 'housing': {
+            const housingData = await fetchJson('/data/housing.json')
+            set({ housingData })
+            break
+          }
+        }
+      } catch {
+        markFailed(layer)
+      }
+    })()
+
+    inFlight.set(layer, p)
+    return p
+  }
+
   return {
     ...initialData,
     failedDatasets: new Set(),
-
-    loadBaseData: () => {
-      if (fetched.has('__base__')) return
-      fetched.add('__base__')
-      Promise.all([
-        fetch('/data/neighborhoods.geojson').then((r) => {
-          if (!r.ok) throw new Error('Failed to load neighborhoods')
-          return r.json()
-        }),
-        fetch('/data/routes.json').then((r) => {
-          if (!r.ok) throw new Error('Failed to load routes')
-          return r.json()
-        }),
-        fetch('/data/grocery_stores.geojson').then((r) => {
-          if (!r.ok) throw new Error('Failed to load grocery stores')
-          return r.json()
-        }),
-      ])
-        .then(([neighborhoods, routes, groceryStores]) => {
-          set({ neighborhoods, routes, groceryStores })
-        })
-        .catch((err) => {
-          console.error('Failed to load base data:', err)
-        })
-    },
-
-    loadLayer: (layer) => {
-      if (fetched.has(layer)) return
-      fetched.add(layer)
-
-      switch (layer) {
-        case 'complaints':
-          Promise.all([
-            fetch('/data/csb_latest.json').then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            }),
-            fetch('/data/trends.json').then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            }),
-          ])
-            .then(([csbData, trendsData]) => {
-              set({ csbData, trendsData })
-            })
-            .catch(() => markFailed('complaints'))
-          break
-
-        case 'transit':
-          Promise.all([
-            fetch('/data/stops.geojson').then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            }),
-            fetch('/data/shapes.geojson')
-              .then((r) => r.json())
-              .catch(() => null),
-            fetch('/data/stop_stats.json').then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            }),
-          ])
-            .then(([stops, shapes, stopStats]) => {
-              set({ stops, shapes, stopStats })
-            })
-            .catch(() => markFailed('transit'))
-          break
-
-        case 'vacancy':
-          fetch('/data/vacancies.json')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((vacancyData) => set({ vacancyData }))
-            .catch(() => markFailed('vacancy'))
-          break
-
-        case 'foodAccess':
-          fetch('/data/food_deserts.geojson')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((foodDeserts) => set({ foodDeserts }))
-            .catch(() => markFailed('foodAccess'))
-          break
-
-        case 'crime':
-          fetch('/data/crime.json')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((crimeData) => set({ crimeData }))
-            .catch(() => markFailed('crime'))
-          break
-
-        case 'arpa':
-          fetch('/data/arpa.json')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((arpaData) => set({ arpaData }))
-            .catch(() => markFailed('arpa'))
-          break
-
-        case 'demographics':
-          fetch('/data/demographics.json')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((demographicsData) => set({ demographicsData }))
-            .catch(() => markFailed('demographics'))
-          break
-
-        case 'housing':
-          fetch('/data/housing.json')
-            .then((r) => {
-              if (!r.ok) throw new Error('not found')
-              return r.json()
-            })
-            .then((housingData) => set({ housingData }))
-            .catch(() => markFailed('housing'))
-          break
-      }
-    },
+    loadBaseData,
+    loadLayer,
   }
 })
 
@@ -196,4 +170,20 @@ export function getDataSnapshot(): ExplorerData {
     demographicsData: s.demographicsData,
     housingData: s.housingData,
   }
+}
+
+/**
+ * Helper for executors: ensure all listed layers (or base data) are loaded
+ * before reading from the store. Resolves when all datasets are available
+ * (or have failed).
+ */
+export async function ensureLoaded(
+  ...layers: Array<keyof LayerToggles | 'base'>
+): Promise<void> {
+  const store = useDataStore.getState()
+  await Promise.all(
+    layers.map((l) =>
+      l === 'base' ? store.loadBaseData() : store.loadLayer(l),
+    ),
+  )
 }

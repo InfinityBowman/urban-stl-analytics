@@ -1,9 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
 
 export function TransitLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('transit')
+  }, [])
+
   const stops = useDataStore((s) => s.stops)
   const stopStats = useDataStore((s) => s.stopStats)
   const shapes = useDataStore((s) => s.shapes)

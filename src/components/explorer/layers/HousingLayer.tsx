@@ -1,10 +1,14 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
 import { CHORO_COLORS, dynamicBreaks } from '@/lib/colors'
 
 export function HousingLayer() {
+  useEffect(() => {
+    useDataStore.getState().loadLayer('housing')
+  }, [])
+
   const neighborhoods = useDataStore((s) => s.neighborhoods)
   const housingData = useDataStore((s) => s.housingData)
   const metric = useExplorerStore((s) => s.subToggles.housingMetric)

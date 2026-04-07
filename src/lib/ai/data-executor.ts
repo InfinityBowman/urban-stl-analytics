@@ -1,7 +1,8 @@
 import { resolveNeighborhood } from './neighborhood-resolver'
-import type { ExplorerData } from '@/lib/explorer-types'
+import type { ExplorerData, LayerToggles } from '@/lib/explorer-types'
 import type { ToolCall } from './use-chat'
 import { computeNeighborhoodMetrics } from '@/lib/neighborhood-metrics'
+import { ensureLoaded, getDataSnapshot } from '@/stores/data-store'
 
 export interface DataToolResult {
   toolCallId: string
@@ -9,48 +10,122 @@ export interface DataToolResult {
   content: string
 }
 
+const ALL_LAYERS: Array<keyof LayerToggles> = [
+  'complaints',
+  'crime',
+  'transit',
+  'vacancy',
+  'foodAccess',
+  'arpa',
+  'demographics',
+  'housing',
+]
+
+/** Map a `get_rankings` metric arg to the layer it depends on. */
+function rankingsLayer(metric: string): keyof LayerToggles | null {
+  switch (metric) {
+    case 'complaints':
+      return 'complaints'
+    case 'crime':
+      return 'crime'
+    case 'vacancy':
+      return 'vacancy'
+    case 'population':
+    case 'vacancyRate':
+    case 'popChange':
+      return 'demographics'
+    case 'rent':
+    case 'homeValue':
+      return 'housing'
+    default:
+      return null
+  }
+}
+
 /**
- * Execute a data retrieval tool call against the current ExplorerData.
- * Returns a result object suitable for building a role:'tool' message.
+ * Execute a data retrieval tool call. Awaits the relevant dataset loads
+ * before reading from the store, then snapshots the data and runs the
+ * builder. Returns a result object suitable for building a role:'tool'
+ * message.
  */
-export function executeDataTool(
+export async function executeDataTool(
   toolCall: ToolCall,
-  data: ExplorerData,
-): DataToolResult {
+): Promise<DataToolResult> {
   const args = toolCall.arguments
 
   let content: unknown
   switch (toolCall.name) {
-    case 'get_city_summary':
-      content = buildCitySummary(data)
+    case 'get_city_summary': {
+      // Summary touches every dataset; load them all in parallel.
+      await ensureLoaded('base', ...ALL_LAYERS)
+      content = buildCitySummary(getDataSnapshot())
       break
-    case 'get_neighborhood_detail':
-      content = buildNeighborhoodDetail(args.name as string, data)
+    }
+    case 'get_neighborhood_detail': {
+      // Reads csb, crime, demographics, housing, vacancy + transit/foodAccess
+      // via computeNeighborhoodMetrics.
+      await ensureLoaded(
+        'base',
+        'complaints',
+        'crime',
+        'demographics',
+        'housing',
+        'vacancy',
+        'transit',
+      )
+      content = buildNeighborhoodDetail(args.name as string, getDataSnapshot())
       break
-    case 'get_rankings':
+    }
+    case 'get_rankings': {
+      const metric = args.metric as string
+      const layer = rankingsLayer(metric)
+      await ensureLoaded('base', ...(layer ? [layer] : []))
       content = buildRankings(
-        args.metric as string,
+        metric,
         (args.order as string) ?? 'desc',
         Math.min(Number(args.limit) || 10, 20),
-        data,
+        getDataSnapshot(),
       )
       break
-    case 'get_category_breakdown':
+    }
+    case 'get_category_breakdown': {
+      const dataset = args.dataset as string
+      const layer: keyof LayerToggles | null =
+        dataset === 'complaints'
+          ? 'complaints'
+          : dataset === 'crime'
+            ? 'crime'
+            : null
+      await ensureLoaded('base', ...(layer ? [layer] : []))
       content = buildCategoryBreakdown(
-        args.dataset as string,
+        dataset,
         args.neighborhood as string | undefined,
-        data,
+        getDataSnapshot(),
       )
       break
-    case 'get_arpa_data':
-      content = buildArpaData(args.category as string | undefined, data)
+    }
+    case 'get_arpa_data': {
+      await ensureLoaded('arpa')
+      content = buildArpaData(
+        args.category as string | undefined,
+        getDataSnapshot(),
+      )
       break
-    case 'get_food_access':
-      content = buildFoodAccess(data)
+    }
+    case 'get_food_access': {
+      // groceryStores is base data; foodDeserts is loaded by foodAccess.
+      await ensureLoaded('base', 'foodAccess')
+      content = buildFoodAccess(getDataSnapshot())
       break
-    case 'get_housing_data':
-      content = buildHousingData(args.neighborhood as string | undefined, data)
+    }
+    case 'get_housing_data': {
+      await ensureLoaded('base', 'housing')
+      content = buildHousingData(
+        args.neighborhood as string | undefined,
+        getDataSnapshot(),
+      )
       break
+    }
     default:
       content = { error: `Unknown data tool: ${toolCall.name}` }
   }

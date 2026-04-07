@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/mapbox'
 import { useDataStore } from '@/stores/data-store'
 import { useExplorerStore } from '@/stores/explorer-store'
@@ -6,6 +6,12 @@ import { CHORO_COLORS, dynamicBreaks } from '@/lib/colors'
 import { buildHeatmapGeo, getHoodComplaintCount } from '@/lib/analysis'
 
 export function ComplaintsLayer() {
+  // Lazy-load on mount. The layer component only renders when the layer
+  // is enabled, so this fires exactly when the data is needed.
+  useEffect(() => {
+    useDataStore.getState().loadLayer('complaints')
+  }, [])
+
   const neighborhoods = useDataStore((s) => s.neighborhoods)
   const csbData = useDataStore((s) => s.csbData)
 
